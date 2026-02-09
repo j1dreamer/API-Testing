@@ -1,0 +1,391 @@
+.inventory-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 16px;
+}
+
+.inventory-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.inventory-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.inventory-header .count {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.inventory-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.inventory-controls .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inventory-controls .filter-group label {
+    font-size: 0.85rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inventory-controls select,
+.inventory-controls input[type="text"] {
+    padding: 6px 10px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+}
+
+.inventory-controls .search {
+    flex: 1;
+    min-width: 150px;
+}
+
+.inventory-controls .search input {
+    width: 100%;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.toggle-label {
+    font-size: 0.85rem;
+    color: #888;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.control-buttons button {
+    padding: 6px 14px;
+    background: #2a3a4a;
+    border: 1px solid #3a4a5a;
+    border-radius: 4px;
+    color: #7aa5d2;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.control-buttons button:hover {
+    background: #3a4a5a;
+}
+
+.control-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.inventory-content {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+}
+
+.api-tree {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.domain-group {
+    margin-bottom: 16px;
+}
+
+.domain-header {
+    font-weight: 600;
+    color: #7aa5d2;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.path-group {
+    margin-left: 16px;
+    margin-bottom: 8px;
+}
+
+.path-header {
+    color: #aaa;
+    font-family: monospace;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.methods-list {
+    margin-left: 12px;
+}
+
+.method-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.method-item:hover {
+    background: #252525;
+}
+
+.method-item.selected {
+    background: #1e3a5f;
+}
+
+.method-tag {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.method-tag.large {
+    padding: 4px 12px;
+    font-size: 0.85rem;
+}
+
+.method-tag.get {
+    background: #1a472a;
+    color: #4ade80;
+}
+
+.method-tag.post {
+    background: #1e3a5f;
+    color: #60a5fa;
+}
+
+.method-tag.put {
+    background: #4a3728;
+    color: #fbbf24;
+}
+
+.method-tag.patch {
+    background: #3d2d4a;
+    color: #c084fc;
+}
+
+.method-tag.delete {
+    background: #4a2828;
+    color: #f87171;
+}
+
+.api-name {
+    color: #ccc;
+    font-size: 0.85rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.request-count {
+    color: #666;
+    font-size: 0.75rem;
+}
+
+.api-detail {
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.detail-header .path {
+    font-family: monospace;
+    font-size: 1rem;
+    color: #ccc;
+}
+
+.coverage-section h4,
+.doc-section h4,
+.example-section h4 {
+    margin: 0 0 10px 0;
+    color: #888;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.coverage-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.method-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.method-badge.captured {
+    background: #1a472a;
+    color: #4ade80;
+}
+
+.method-badge.missing {
+    background: #2a2a2a;
+    color: #666;
+}
+
+.doc-section {
+    background: #151515;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.doc-header button {
+    padding: 4px 10px;
+    background: #2a3a4a;
+    border: none;
+    border-radius: 4px;
+    color: #7aa5d2;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.doc-display p {
+    margin: 6px 0;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.empty-text {
+    color: #555;
+}
+
+.edit-form {
+    margin-top: 12px;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    background: #0d0d0d;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.form-actions button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.form-actions button:first-child {
+    background: #1e4a3a;
+    color: #4ade80;
+}
+
+.form-actions button.cancel {
+    background: #333;
+    color: #888;
+}
+
+.example-section pre {
+    background: #0d0d0d;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #aaa;
+    overflow-x: auto;
+    max-height: 200px;
+}
+
+.meta-section {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.meta-section p {
+    margin: 4px 0;
+}
+
+.meta-section strong {
+    color: #aaa;
+}
+
+.no-selection,
+.empty,
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
+    text-align: center;
+}
+
+.hint {
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
