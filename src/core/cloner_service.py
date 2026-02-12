@@ -55,15 +55,41 @@ async def fetch_site_config_live(site_id: str) -> Dict[str, Any]:
     
     async with httpx.AsyncClient(verify=False) as client:
         try:
-            # Using /networksSummary as it provides more comprehensive data for cloning
-            url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
-            res = await client.get(url, headers=headers, timeout=10.0)
-            if res.status_code == 200:
-                return res.json()
-            else:
-                return {"error": f"Live fetch failed with status {res.status_code}"}
+            # Fetch networks
+            url_nets = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
+            res_nets = await client.get(url_nets, headers=headers, timeout=10.0)
+            
+            # Fetch guest portal settings (site-level)
+            url_guest = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/guestPortalSettings"
+            res_guest = await client.get(url_guest, headers=headers, timeout=10.0)
+            
+            # Safe JSON parsing
+            nets_data = []
+            if res_nets.status_code == 200:
+                try:
+                    nets_data = res_nets.json()
+                except Exception:
+                    print(f"[CLONER] Failed to parse networks JSON: {res_nets.text[:100]}")
+            
+            guest_data = None
+            if res_guest.status_code == 200:
+                try:
+                    guest_data = res_guest.json()
+                except Exception:
+                    print(f"[CLONER] Failed to parse guest portal JSON: {res_guest.text[:100]}")
+            
+            config = {
+                "networks": nets_data,
+                "guest_portal": guest_data
+            }
+            
+            if not config["networks"] and res_nets.status_code != 200:
+                return {"error": f"Live fetch failed with status {res_nets.status_code}. Details: {res_nets.text[:100]}"}
+                
+            return config
         except Exception as e:
-            return {"error": f"Live fetch error: {str(e)}"}
+            print(f"[CLONER] Fetch config exception: {str(e)}")
+            return {"error": f"Live fetch exception: {str(e)}"}
 
 async def get_captured_sites() -> List[Dict[str, Any]]:
     """Extract unique site IDs and names from raw logs using multiple patterns."""
@@ -133,14 +159,30 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
     """
     operations = []
     
-    # 1. Normalize input to a list of network objects
+    # 1. Normalize input to a list of network objects and extract guest portal
     raw_networks = []
-    if isinstance(config, list):
-        raw_networks = config
-    elif isinstance(config, dict):
-        # Could be { "elements": [...] } or a single wired network with nested wireless
-        raw_networks = config.get("elements", []) if "elements" in config else [config]
+    guest_portal = None
     
+    if isinstance(config, dict):
+        if "networks" in config:
+            nets_part = config["networks"]
+            # Handle { "networks": { "elements": [...] } } or { "networks": [...] }
+            if isinstance(nets_part, dict):
+                raw_networks = nets_part.get("elements", [nets_part])
+            elif isinstance(nets_part, list):
+                raw_networks = nets_part
+            else:
+                raw_networks = [nets_part]
+            
+            guest_portal = config.get("guest_portal")
+        elif "elements" in config:
+            raw_networks = config["elements"]
+        else:
+            raw_networks = [config]
+    elif isinstance(config, list):
+        raw_networks = config
+
+    # Add Networks
     for net in raw_networks:
         # Check if it's a wired network with nested wireless (common in older API logs)
         nested_wireless = net.pop("wirelessNetworks", []) if isinstance(net, dict) else []
@@ -174,6 +216,14 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
                 "payload": clean_wifi_payload,
             })
             
+    # 2. Add Guest Portal Operation if present (APPEND so it runs AFTER networks are ready)
+    if guest_portal:
+        operations.append({
+            "type": "GUEST_PORTAL",
+            "name": "Guest Portal Settings",
+            "payload": guest_portal
+        })
+            
     return operations
 
 async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -205,29 +255,60 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
             try:
                 full_payload = op.get("payload", {})
                 
-                # --- Pass 1: "Strict Create" (POST) ---
-                # We only keep the fields necessary for a standard network creation.
-                # Advanced nested objects (policies, bindings) are stripped to avoid 400.
+                # --- Handle GUEST_PORTAL (Single Final Pass) ---
+                if op["type"] == "GUEST_PORTAL":
+                    portal_url = f"https://portal.instant-on.hpe.com/api/sites/{target_site_id}/guestPortalSettings"
+                    print(f"[CLONER] GUEST_PORTAL (Final Pass): PUT -> {op['name']}")
+                    # Strip only 'id' which is site-specific. Keep 'kind' as per user cURL.
+                    clean_portal = {k: v for k, v in full_payload.items() if k not in ["id"]}
+                    res_p = await client.put(portal_url, headers=headers, json=clean_portal, timeout=15.0)
+                    if res_p.status_code in [200, 204]:
+                        results.append({"name": op["name"], "type": op["type"], "status": "SUCCESS (GUEST_PORTAL)"})
+                    else:
+                        results.append({
+                            "name": op["name"], 
+                            "type": op["type"], 
+                            "status": f"GUEST_PORTAL FAILED [{res_p.status_code}]", 
+                            "detail": res_p.text[:500]
+                        })
+                    continue
+
+                # Pass 1: "Rich Identity Create" (POST)
+                # For Guest/Captive networks, the initial POST is almost the full config.
                 create_keys = [
-                    "networkName", "type", "authentication", "security", "isEnabled",
-                    "isWireless", "useVlan", "vlanId", "preSharedKey", "isSsidHidden",
-                    "ipAddressingMode", "activeSchedule"
+                    "networkName", "type", "authentication", "security", "isWireless",
+                    "ipAddressingMode", "isEnabled", "isCaptivePortalEnabled",
+                    "isGuestPortalEnabled", "dhcpScope", "isSsidHidden",
+                    "isAvailableOn24GHzRadioBand", "isAvailableOn5GHzRadioBand", "isAvailableOn6GHzRadioBand",
+                    "isLegacy80211bRatesEnabled", "isHighEfficiency11axEnabled", "isHighEfficiency11axOfdmaEnabled",
+                    "isDynamicMulticastOptimizationEnabled", "isBroadcastOnAllBoundApsOnAllBands",
+                    "isInternetAllowed", "isIntraSubnetTrafficAllowed", "isAccessRestricted",
+                    "activeSchedule", "schedule", "weekSchedule"
                 ]
                 
                 # Copy basics
                 create_payload = {k: v for k, v in full_payload.items() if k in create_keys}
                 
-                # Handle radio bands (essential for wireless)
-                for k in ["isAvailableOn24GHzRadioBand", "isAvailableOn5GHzRadioBand", "isAvailableOn6GHzRadioBand"]:
-                    if k in full_payload:
-                        create_payload[k] = full_payload[k]
+                # Security specific: PSK is needed if not OPEN
+                if full_payload.get("security") != "OPEN" and "preSharedKey" in full_payload:
+                    create_payload["preSharedKey"] = full_payload["preSharedKey"]
 
-                # Critical Fixes for POST:
+                # Addressing specific: NAT/Internal mode usually forces useVlan=False
+                addr_mode = full_payload.get("ipAddressingMode")
+                if addr_mode in ["NAT", "internal"]:
+                    create_payload["useVlan"] = False
+                    create_payload["vlanId"] = None if addr_mode == "internal" else 1
+                else:
+                    # Bridge mode: keep vlan info if present
+                    if "useVlan" in full_payload: create_payload["useVlan"] = full_payload["useVlan"]
+                    if "vlanId" in full_payload: create_payload["vlanId"] = full_payload["vlanId"]
+
+                # Critical structure fixes:
                 create_payload.update({
                     "accessPoints": [],
-                    "wiredNetworkId": None, # Force null for creation
+                    "wiredNetworkId": None,
                     "isBandwidthLimitEnabled": False,
-                    "isAccessRestricted": False
+                    "isAccessRestricted": full_payload.get("isAccessRestricted", False)
                 })
 
                 # Basic schedule if it exists, but strip 'state' and 'scheduleId' which are ID-bound
