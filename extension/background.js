@@ -1,14 +1,20 @@
-/**
- * Headless Capture Engine — Aruba API Analysis
- * Uses chrome.debugger (CDP) for high-fidelity traffic interception.
- */
+// ===== CONFIGURATION =====
+const TARGET_DOMAINS = [
+    'portal.instant-on.hpe.com',
+    'arubainstanton.com'
+];
+
+function isTargetUrl(url) {
+    if (!url) return false;
+    return TARGET_DOMAINS.some(domain => url.includes(domain));
+}
 
 const BACKEND_URL = 'http://localhost:8000';
 
 // ===== STATE =====
 const attachedTabs = new Set();
-const pendingRequests = new Map(); // requestId -> request metadata
-const pendingBatch = [];           // batch buffer
+const pendingRequests = new Map();
+const pendingBatch = [];
 let batchTimer = null;
 const BATCH_INTERVAL_MS = 2000;
 const BATCH_MAX_SIZE = 50;
@@ -19,18 +25,23 @@ async function startCapture(tabId) {
     if (attachedTabs.has(tabId)) return;
 
     try {
+        const tab = await chrome.tabs.get(tabId);
+        if (!isTargetUrl(tab.url)) return;
+
         await chrome.debugger.attach({ tabId }, '1.3');
         await chrome.debugger.sendCommand({ tabId }, 'Network.enable');
 
         attachedTabs.add(tabId);
+        console.log(`[Capture Engine] 🚀 Attached to Aruba Portal (Tab ${tabId})`);
 
         if (!batchTimer) {
             batchTimer = setInterval(flushBatch, BATCH_INTERVAL_MS);
         }
-
-        console.log(`[Capture Engine] 🚀 Global capture attached to tab ${tabId}`);
     } catch (err) {
-        // Silently ignore if already attached or system tab
+        // Find if it was a user cancel or other error
+        if (err.message && err.message.includes("canceled")) {
+            console.log(`[Capture Engine] 🛑 User canceled attachment`);
+        }
     }
 }
 
@@ -50,7 +61,6 @@ chrome.runtime.onSuspend.addListener(() => {
 // ===== EVENT LISTENERS =====
 
 chrome.debugger.onEvent.addListener(async (source, method, params) => {
-    // Greedy capture: if it's from any tab we're attached to
     if (!attachedTabs.has(source.tabId)) return;
 
     switch (method) {
@@ -68,6 +78,7 @@ chrome.debugger.onEvent.addListener(async (source, method, params) => {
 
 chrome.debugger.onDetach.addListener((source) => {
     attachedTabs.delete(source.tabId);
+    console.log(`[Capture Engine] 🔌 Detached from Tab ${source.tabId}`);
 });
 
 // ===== HANDLERS =====
@@ -75,13 +86,18 @@ chrome.debugger.onDetach.addListener((source) => {
 function handleRequest(params) {
     const { requestId, request, timestamp, type } = params;
 
-    // Filter out binary noise to focus on APIs/JSON
-    const noise = ['Image', 'Font', 'Stylesheet', 'Media', 'Ping'];
-    if (noise.includes(type)) return;
+    // 1. URL Filter: Only relevant API domains
+    if (!isTargetUrl(request.url)) return;
+
+    // 2. Type Filter: APIs only (Fetch/XHR)
+    // Note: Sometimes APIs are loaded as 'Other' or 'Script' in rare cases, but XHR/Fetch is standard
+    if (!['Fetch', 'XHR', 'Other'].includes(type) && request.method === 'GET') {
+        // Allow POST/PUT/etc regardless of type just in case
+        return;
+    }
 
     console.log(`[Capture] 🔍 Request: ${request.method} ${request.url}`);
 
-    // Extract Mandatory Headers for API Blueprint
     const headers = request.headers;
     const mandatory = {
         authorization: headers['Authorization'] || headers['authorization'] || null,
@@ -91,7 +107,6 @@ function handleRequest(params) {
         origin: headers['Origin'] || headers['origin'] || null
     };
 
-    // Simple Execution Context Heuristics
     let context = 'DATA_FETCH';
     if (request.method !== 'GET') context = 'CONFIG_CHANGE';
     if (request.url.includes('login') || request.url.includes('auth') || request.url.includes('sso')) {
@@ -127,15 +142,12 @@ async function handleFinished(tabId, params) {
 
     pending.duration_ms = Date.now() - pending.start_time;
 
-    // Greedy Response Body Capture
     try {
         const result = await chrome.debugger.sendCommand(
             { tabId }, 'Network.getResponseBody', { requestId }
         );
         pending.response_body = result.body;
-        if (result.base64Encoded) {
-            pending.is_binary = true;
-        }
+        if (result.base64Encoded) pending.is_binary = true;
     } catch (err) {
         pending.response_body = null;
     }
@@ -164,7 +176,6 @@ function tryParse(data) {
 async function trackAuthSequence(data) {
     const sessions = [];
 
-    // Header check
     const authHeader = data.request_headers['Authorization'] || data.request_headers['authorization'] || '';
     if (authHeader.toLowerCase().startsWith('bearer ')) {
         sessions.push({
@@ -175,7 +186,6 @@ async function trackAuthSequence(data) {
         });
     }
 
-    // Body check (OAuth)
     if (data.response_body && typeof data.response_body === 'object') {
         const body = data.response_body;
         if (body.access_token) {
@@ -190,7 +200,6 @@ async function trackAuthSequence(data) {
         }
     }
 
-    // CSRF check
     const csrf = data.request_headers['X-CSRF-Token'] || data.request_headers['x-csrf-token'] || '';
     if (csrf) {
         sessions.push({
@@ -210,6 +219,58 @@ async function trackAuthSequence(data) {
             });
         } catch (e) { }
     }
+
+    // ===== BLUEPRINT CAPTURE =====
+    const isLoginRequest = data.url.includes('login') || data.url.includes('oauth') || data.url.includes('token');
+    const hasTokenInResponse = data.response_body && (data.response_body.access_token || data.response_body.id_token);
+
+    if (isLoginRequest || hasTokenInResponse) {
+        console.log(`[Capture] 💎 Detected Auth Blueprint for: ${data.url}`);
+
+        // 1. Mask sensitive headers
+        const safeHeaders = { ...data.request_headers };
+        const sensitiveHeaders = ['authorization', 'Authorization', 'cookie', 'Cookie', 'x-csrf-token', 'X-CSRF-Token'];
+        sensitiveHeaders.forEach(h => {
+            if (safeHeaders[h]) safeHeaders[h] = "[MASKED]";
+        });
+
+        // 2. Mask sensitive body fields
+        let safeBody = null;
+        if (data.request_body && typeof data.request_body === 'object') {
+            safeBody = { ...data.request_body };
+            const sensitiveKeys = ['password', 'secret', 'client_secret', 'username', 'email'];
+            sensitiveKeys.forEach(k => {
+                if (safeBody[k]) safeBody[k] = `{{${k}}}`;
+            });
+        }
+
+        // 3. Extract tokens to watch
+        const detectedTokens = [];
+        if (data.response_body && typeof data.response_body === 'object') {
+            if (data.response_body.access_token) detectedTokens.push("access_token");
+            if (data.response_body.id_token) detectedTokens.push("id_token");
+        }
+
+        const blueprint = {
+            base_url: new URL(data.url).origin,
+            endpoint: new URL(data.url).pathname,
+            method: data.method,
+            headers: safeHeaders,
+            body_template: safeBody,
+            detected_tokens: detectedTokens
+        };
+
+        try {
+            await fetch(`${BACKEND_URL}/api/capture-blueprint`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(blueprint)
+            });
+            console.log(`[Capture] ✅ Sent Auth Blueprint to backend`);
+        } catch (e) {
+            console.error(`[Capture] ❌ Failed to send blueprint:`, e);
+        }
+    }
 }
 
 // ===== BATCH SENDER =====
@@ -225,9 +286,7 @@ async function flushBatch() {
             body: JSON.stringify({ requests: batch })
         });
         if (response.ok) {
-            console.log(`[Capture] ✅ Sent batch of ${batch.length} requests to backend`);
-        } else {
-            console.warn(`[Capture] ⚠️ Backend returned error: ${response.status}`);
+            console.log(`[Capture] ✅ Sent batch of ${batch.length} requests`);
         }
     } catch (err) {
         console.error('[Capture] ❌ Failed to send batch:', err.message);
@@ -236,33 +295,34 @@ async function flushBatch() {
 
 // ===== GLOBAL INITIALIZATION =====
 
+// Only attach to existing tabs if they match
 async function initGlobalCapture() {
     const tabs = await chrome.tabs.query({});
     for (const tab of tabs) {
-        if (tab.url && !tab.url.startsWith('chrome://')) {
+        if (isTargetUrl(tab.url)) {
             await startCapture(tab.id);
         }
     }
 }
 
-// Attach to new tabs
-chrome.tabs.onCreated.addListener((tab) => {
-    startCapture(tab.id);
+chrome.tabs.onCreated.addListener(async (tab) => {
+    // onCreated might not have URL yet, wait for update
 });
 
 // Re-attach or update capture on reload
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url && !tab.url.startsWith('chrome://')) {
+    if (isTargetUrl(tab.url)) {
         startCapture(tabId);
+    } else {
+        // Navigate away from target -> stop capture to remove banner
+        stopCapture(tabId);
     }
 });
 
-// Cleanup on tab close
 chrome.tabs.onRemoved.addListener((tabId) => {
     attachedTabs.delete(tabId);
 });
 
-// Run on extension load
 initGlobalCapture();
 
-console.log('[Capture Engine] 🌍 Global Chrome Capture Active');
+console.log('[Capture Engine] 🌍 Smart Capture Active (Aruba Only)');

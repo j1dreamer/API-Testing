@@ -116,6 +116,7 @@ def generate_openapi_spec(
     
     Includes auto-injected auth from latest captured session.
     """
+    # Base Proxy URL
     if not server_url:
         server_url = "http://localhost:8000/api/proxy"
 
@@ -154,14 +155,48 @@ def generate_openapi_spec(
         # Request body
         req_body = ep.get("request_body_sample")
         if req_body and method in ("post", "put", "patch"):
+            headers = ep.get("request_headers", {})
+            content_type = "application/json"
+            for k, v in headers.items():
+                if k.lower() == "content-type":
+                    content_type = v.split(";")[0].strip()
+                    break
+
+            # Schema Generation
+            is_form = content_type == "application/x-www-form-urlencoded"
+            final_schema = {"type": "string"} # Default fallback
+
+            if is_form and isinstance(req_body, str):
+                try:
+                    from urllib.parse import parse_qsl
+                    # parse_qsl returns list of (key, value) tuples, preserving order better than parse_qs for simple forms
+                    parsed = parse_qsl(req_body)
+                    properties = {}
+                    
+                    if parsed:
+                         for key, val in parsed:
+                             properties[key] = {"type": "string", "default": val}
+                         
+                         final_schema = {
+                             "type": "object",
+                             "properties": properties
+                         }
+                    else:
+                         # Maybe raw string acting as form? Fallback
+                         final_schema = _infer_schema(req_body)
+                except:
+                    final_schema = _infer_schema(req_body)
+            else:
+                final_schema = _infer_schema(req_body)
+
             operation["requestBody"] = {
                 "required": True,
                 "content": {
-                    "application/json": {
-                        "schema": _infer_schema(req_body),
-                        "example": req_body,
+                    content_type: {
+                        "schema": final_schema,
+                        "example": req_body
                     }
-                },
+                }
             }
 
         # Responses
@@ -195,10 +230,18 @@ def generate_openapi_spec(
         if security:
             operation["security"] = security
 
+        # Add Server block specifically for this operation's domain
+        ep_domain = ep.get("domain", domain)
+        operation["servers"] = [
+            {
+                "url": f"http://localhost:8000/api/proxy?domain={ep_domain}",
+                "description": f"Proxy via {ep_domain}"
+            }
+        ]
+
         # Store captured headers for proxy
         operation["x-captured-headers"] = headers
         operation["x-captured-cookies"] = ep.get("cookies", {})
-        operation["x-target-domain"] = ep.get("domain", "")
 
         paths[path][method] = operation
 

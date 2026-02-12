@@ -19,6 +19,8 @@ class CapturePayload(BaseModel):
     """Schema for a single captured request/response from the extension."""
     url: str = Field(..., description="Full request URL")
     method: str = Field(..., description="HTTP verb")
+    domain: Optional[str] = Field(None, description="Request domain")
+    path: Optional[str] = Field(None, description="URL path")
     request_headers: Dict[str, str] = Field(default_factory=dict)
     mandatory_headers: Optional[MandatoryHeaders] = Field(None)
     execution_context: str = Field("DATA_FETCH", description="AUTH_FLOW, CONFIG_CHANGE, DATA_FETCH")
@@ -47,6 +49,24 @@ class AuthSessionPayload(BaseModel):
     headers_snapshot: Dict[str, str] = Field(
         default_factory=dict, description="Full headers at capture time"
     )
+
+
+class AuthFlowBlueprint(BaseModel):
+    """Blueprint for replaying an authentication flow."""
+    base_url: str = Field(..., description="Target origin URL")
+    endpoint: str = Field(..., description="Auth path")
+    method: str = Field(..., description="HTTP method")
+    headers: Dict[str, str] = Field(..., description="Headers with masked sensitive data")
+    body_template: Optional[Dict[str, Any]] = Field(None, description="Body with placeholders")
+    detected_tokens: List[str] = Field(default_factory=list, description="Keys to extract from response")
+    created_at: Optional[datetime] = None
+
+
+class ReplayLoginPayload(BaseModel):
+    """Payload sent from Swagger UI to trigger replay login."""
+    domain: str = Field(..., description="Target domain to login to")
+    username: str
+    password: str
 
 
 # ===== DATABASE DOCUMENT MODELS =====

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Config Cloner - Aruba Research</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0b10;
+            --bg-surface: #12141c;
+            --bg-darker: #050609;
+            --indigo-primary: #6366f1;
+            --border-subtle: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: #cbd5e1;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass {
+            background: rgba(18, 20, 28, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .btn-primary {
+            background: var(--indigo-primary);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen pb-12">
+    <!-- Navbar -->
+    <nav class="h-14 border-b border-subtle glass sticky top-0 z-50 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-white italic">
+                CL</div>
+            <h1 class="text-sm font-black tracking-tighter uppercase text-white">Site <span
+                    class="text-indigo-400">Cloner</span></h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="/"
+                class="text-xs font-bold text-slate-400 hover:text-white transition-colors flex items-center gap-1.5">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                Dashboard
+            </a>
+            <div id="auth-status"
+                class="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-[10px] font-bold text-red-500 flex items-center gap-2">
+                <div class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+                TARGET OFFLINE
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto mt-12 px-6 space-y-8">
+        <!-- Account Connection Section -->
+        <section id="section-login" class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-6 h-6 rounded bg-indigo-500/20 flex items-center justify-center text-[10px] font-bold text-indigo-400">
+                        <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Account Session</h2>
+                </div>
+                <button id="btn-toggle-login"
+                    class="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest">Toggle
+                    Login Form</button>
+            </div>
+
+            <div id="login-form-container" class="glass p-6 rounded-2xl hidden transition-all duration-300">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Username (Email)</label>
+                        <input type="text" id="login-username"
+                            class="w-full bg-darker border border-subtle rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                            placeholder="khuong.thai@example.com">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Password</label>
+                        <input type="password" id="login-password"
+                            class="w-full bg-darker border border-subtle rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button id="btn-do-login"
+                        class="btn-primary px-8 h-10 rounded-xl text-xs font-bold text-white flex items-center gap-2">
+                        <i data-lucide="log-in" class="w-4 h-4"></i>
+                        LINK ACCOUNT
+                    </button>
+                </div>
+            </div>
+
+            <div id="account-active-banner" class="glass p-4 rounded-xl hidden border-emerald-500/20 bg-emerald-500/5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-white uppercase tracking-tighter">Active Session Linked
+                            </p>
+                            <p class="text-[10px] text-emerald-500/60 font-medium">You can now fetch live sites and
+                                configurations.</p>
+                        </div>
+                    </div>
+                    <button id="btn-re-login"
+                        class="text-[10px] font-bold text-slate-400 hover:text-white uppercase tracking-widest border border-subtle px-3 py-1.5 rounded-lg">Switch
+                        Account</button>
+                </div>
+            </div>
+        </section>
+        <!-- Step 1: Select Source -->
+        <section class="space-y-4">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                    1</div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Source Selection</h2>
+            </div>
+            <div class="glass p-6 rounded-2xl space-y-4">
+                <div class="flex items-center gap-4 border-b border-subtle pb-4">
+                    <button id="btn-source-captured"
+                        class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 active-source">Captured
+                        Logs</button>
+                    <button id="btn-source-live"
+                        class="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors">Live
+                        Account</button>
+                    <div id="source-indicator"
+                        class="ml-auto text-[10px] font-black uppercase text-indigo-400 tracking-widest">MODE: CAPTURED
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-6 items-end">
+                    <div class="flex-1 space-y-2">
+                        <label id="source-label" class="text-[10px] font-bold text-slate-500 uppercase">Select Captured
+                            Site</label>
+                        <select id="source-site-select"
+                            class="w-full bg-darker border border-subtle rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none cursor-pointer">
+                            <option value="">Loading sites...</option>
+                        </select>
+                    </div>
+                    <button id="btn-fetch-config"
+                        class="btn-primary px-6 h-11 rounded-xl text-xs font-bold text-white flex items-center gap-2 shrink-0">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Fetch Config
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Preview -->
+        <section id="section-preview" class="space-y-4 hidden">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                    2</div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-indigo-400">Review Networks</h2>
+            </div>
+            <div class="glass rounded-2xl overflow-hidden">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-white/5 border-b border-subtle font-bold text-slate-500">
+                        <tr>
+                            <th class="px-6 py-3 w-12 text-center">
+                                <input type="checkbox" id="select-all-ops" checked
+                                    class="rounded border-slate-700 bg-slate-900 focus:ring-indigo-600 focus:ring-offset-slate-900">
+                            </th>
+                            <th class="px-6 py-3">Network Name</th>
+                            <th class="px-6 py-3">Type</th>
+                            <th class="px-6 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="preview-rows" class="divide-y divide-subtle">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Step 3: target selection and clone -->
+        <section id="section-apply" class="space-y-4 hidden">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                    3</div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Destination & Execute</h2>
+            </div>
+            <div class="glass p-8 rounded-2xl space-y-8">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between px-2">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Available Target Sites</p>
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                            <span
+                                class="text-[10px] font-bold text-slate-500 group-hover:text-emerald-400 transition-colors uppercase tracking-widest">Select
+                                All</span>
+                            <input type="checkbox" id="select-all-targets"
+                                class="rounded border-slate-700 bg-slate-900 focus:ring-emerald-500/20" checked>
+                        </label>
+                    </div>
+                    <div id="target-sites-container"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-800">
+                        <!-- Sites rendered as checkboxes here -->
+                        <div class="col-span-full py-8 text-center border border-dashed border-slate-800 rounded-xl">
+                            <p class="text-[10px] text-slate-600 uppercase font-bold tracking-widest">No target sites
+                                available. Link account first.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center gap-4 pt-4 border-t border-subtle">
+                    <button id="btn-start-clone"
+                        class="btn-primary px-12 h-14 rounded-2xl text-sm font-black text-white flex items-center gap-3 shadow-lg shadow-indigo-500/20">
+                        <i data-lucide="rocket" class="w-5 h-5"></i>
+                        EXECUTE CLONE TO TARGET
+                    </button>
+                    <div id="clone-progress" class="w-full max-w-sm hidden space-y-2">
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="progress-bar" class="h-full bg-indigo-500 w-0 transition-all duration-500"></div>
+                        </div>
+                        <p id="progress-status" class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+                            Starting...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Payload Modal -->
+    <div id="payload-modal"
+        class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6 bg-darker/80 backdrop-blur-sm">
+        <div
+            class="glass w-full max-w-4xl max-h-[80vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-subtle">
+            <div class="px-6 py-4 border-b border-subtle flex items-center justify-between bg-darker/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center">
+                        <i data-lucide="code" class="w-4 h-4 text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-xs font-black uppercase tracking-widest text-white">Payload Debug: <span
+                            id="modal-net-name" class="text-indigo-400"></span></h3>
+                </div>
+                <button onclick="closePayloadModal()" class="text-slate-400 hover:text-white transition-colors p-2">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-darker/20">
+                <pre id="payload-code"
+                    class="text-[11px] font-mono text-emerald-400 bg-black/40 p-6 rounded-xl border border-white/5 whitespace-pre-wrap break-all leading-relaxed"></pre>
+            </div>
+            <div class="px-6 py-4 border-t border-subtle flex justify-end bg-darker/40">
+                <button onclick="closePayloadModal()"
+                    class="btn-primary px-8 h-10 rounded-xl text-xs font-bold text-white uppercase tracking-widest">
+                    Close Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        let currentOps = [];
+        let currentSource = "captured"; // Default
+
+        async function init() {
+            loadCapturedSites();
+            checkAuth();
+            setupToggles();
+        }
+
+        function setupToggles() {
+            const btnCap = document.getElementById('btn-source-captured');
+            const btnLive = document.getElementById('btn-source-live');
+            const indicator = document.getElementById('source-indicator');
+            const label = document.getElementById('source-label');
+
+            btnCap.onclick = () => {
+                currentSource = "captured";
+                btnCap.className = "px-4 py-2 rounded-lg text-xs font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20";
+                btnLive.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors";
+                indicator.innerText = "MODE: CAPTURED";
+                label.innerText = "Select Captured Site";
+                loadCapturedSites();
+            };
+
+            btnLive.onclick = () => {
+                currentSource = "live";
+                btnLive.className = "px-4 py-2 rounded-lg text-xs font-bold bg-indigo-500 text-white shadow-lg shadow-indigo-500/20";
+                btnCap.className = "px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-colors";
+                indicator.innerText = "MODE: LIVE ACCOUNT";
+                label.innerText = "Select Live Site";
+                loadLiveSitesForSource();
+            };
+
+            // Login toggles
+            document.getElementById('btn-toggle-login').onclick = () => {
+                const form = document.getElementById('login-form-container');
+                form.classList.toggle('hidden');
+            };
+            document.getElementById('btn-re-login').onclick = () => {
+                document.getElementById('login-form-container').classList.remove('hidden');
+                document.getElementById('account-active-banner').classList.add('hidden');
+            };
+
+            document.getElementById('btn-do-login').onclick = async () => {
+                const user = document.getElementById('login-username').value;
+                const pass = document.getElementById('login-password').value;
+                if (!user || !pass) return alert("Please enter both username and password");
+
+                const btn = document.getElementById('btn-do-login');
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Linking...';
+                lucide.createIcons();
+
+                try {
+                    const res = await fetch('/api/cloner/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: user, password: pass })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        document.getElementById('login-form-container').classList.add('hidden');
+                        checkAuth(); // This also pulls target sites
+                        if (currentSource === 'live') loadLiveSitesForSource();
+                    } else {
+                        throw new Error(data.detail || "Login failed");
+                    }
+                } catch (err) {
+                    alert("Login failed: " + err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i> LINK ACCOUNT';
+                    lucide.createIcons();
+                }
+            };
+        }
+
+        async function loadCapturedSites() {
+            try {
+                const select = document.getElementById('source-site-select');
+                select.innerHTML = '<option value="">Loading captured sites...</option>';
+                const res = await fetch('/api/cloner/sites');
+                const sites = await res.json();
+                select.innerHTML = sites.length ? sites.map(s => `
+                        <option value="${s.siteId}">${s.siteName}</option>
+                `).join('') : '<option value="">No sites captured yet</option>';
+            } catch (err) {
+                console.error("Failed to load captured sites", err);
+            }
+        }
+
+        async function loadLiveSitesForSource() {
+            try {
+                const select = document.getElementById('source-site-select');
+                select.innerHTML = '<option value="">Loading live sites...</option>';
+                const res = await fetch('/api/cloner/live-sites');
+                const sites = await res.json();
+                if (sites.length) {
+                    select.innerHTML = sites.map(s => `
+                        <option value="${s.siteId}">${s.siteName}</option>
+                    `).join('');
+                } else {
+                    select.innerHTML = '<option value="">No sites found in active session. Login first.</option>';
+                }
+            } catch (err) {
+                console.error("Failed to load live sites", err);
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const res = await fetch('/api/cloner/auth-session');
+                const data = await res.json();
+                const status = document.getElementById('auth-status');
+                const loginForm = document.getElementById('login-form-container');
+                const activeBanner = document.getElementById('account-active-banner');
+
+                if (data.token_value) {
+                    status.innerHTML = '<div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>ACCOUNT LINKED';
+                    status.classList.remove('bg-red-500/10', 'text-red-500', 'border-red-500/20');
+                    status.classList.add('bg-emerald-500/10', 'text-emerald-500', 'border-emerald-500/20');
+
+                    activeBanner.classList.remove('hidden');
+                    loginForm.classList.add('hidden');
+
+                    // Fetch target sites if auth is ready
+                    loadTargetSites();
+                } else {
+                    status.innerHTML = '<div class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>NOT LINKED';
+                    status.classList.remove('bg-emerald-500/10', 'text-emerald-500', 'border-emerald-500/20');
+                    status.classList.add('bg-red-500/10', 'text-red-500', 'border-red-500/20');
+
+                    activeBanner.classList.add('hidden');
+                    loginForm.classList.remove('hidden');
+                }
+            } catch (e) { }
+        }
+
+        async function loadTargetSites() {
+            try {
+                const res = await fetch('/api/cloner/live-sites');
+                const sites = await res.json();
+                const container = document.getElementById('target-sites-container');
+
+                if (sites.length) {
+                    container.innerHTML = sites.map(s => `
+                        <label class="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-emerald-500/30 transition-all cursor-pointer group relative overflow-hidden">
+                            <input type="checkbox" class="target-checkbox rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500/20" value="${s.siteId}" checked>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-200 group-hover:text-emerald-400 transition-colors">${s.siteName}</span>
+                                <span class="text-[9px] text-slate-500 font-mono">${s.siteId}</span>
+                            </div>
+                            <div class="absolute right-0 top-0 bottom-0 w-1 bg-emerald-500/0 group-has-[:checked]:bg-emerald-500/50 transition-all"></div>
+                        </label>
+                    `).join('');
+
+                    // Hook up select all
+                    document.getElementById('select-all-targets').onchange = (e) => {
+                        document.querySelectorAll('.target-checkbox').forEach(cb => cb.checked = e.target.checked);
+                    };
+                } else {
+                    container.innerHTML = `
+                        <div class="col-span-full py-8 text-center border border-dashed border-slate-800 rounded-xl">
+                            <p class="text-[10px] text-slate-600 uppercase font-bold tracking-widest">No sites found in target account. Login first.</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                console.error("Failed to load target sites", err);
+            }
+        }
+
+        document.getElementById('btn-fetch-config').onclick = async () => {
+            const siteId = document.getElementById('source-site-select').value;
+            if (!siteId) return;
+
+            const btn = document.getElementById('btn-fetch-config');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Fetching...';
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/cloner/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_id: siteId, source: currentSource })
+                });
+                const data = await res.json();
+                currentOps = data.operations;
+                renderPreview();
+                document.getElementById('section-preview').classList.remove('hidden');
+                document.getElementById('section-apply').classList.remove('hidden');
+            } catch (err) {
+                alert("Error fetching config: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i> Fetch Config';
+                lucide.createIcons();
+            }
+        };
+
+        function renderPreview() {
+            const container = document.getElementById('preview-rows');
+            container.innerHTML = currentOps.map((op, idx) => `
+                <tr class="hover:bg-white/[0.02]">
+                    <td class="px-6 py-4 text-center">
+                        <input type="checkbox" class="op-checkbox rounded border-slate-700 bg-slate-900 focus:ring-indigo-600 focus:ring-offset-slate-900" data-idx="${idx}" checked>
+                    </td>
+                    <td class="px-6 py-4 font-bold text-white">${op.name}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter ${op.type === 'WIRED_NETWORK' ? 'bg-slate-800 text-slate-400' : 'bg-indigo-500/20 text-indigo-400'}">
+                            ${op.type.replace('_NETWORK', '')}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="inspectPayload(${idx})" class="text-slate-400 hover:text-indigo-400 transition-colors flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest group">
+                            <i data-lucide="search" class="w-3.5 h-3.5 group-hover:scale-110 transition-transform"></i>
+                            Debug
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            lucide.createIcons();
+
+            // Select All listener
+            document.getElementById('select-all-ops').onchange = (e) => {
+                document.querySelectorAll('.op-checkbox').forEach(cb => cb.checked = e.target.checked);
+            };
+        }
+
+        function inspectPayload(idx) {
+            const op = currentOps[idx];
+            document.getElementById('modal-net-name').innerText = op.name;
+            document.getElementById('payload-code').innerText = JSON.stringify(op.payload, null, 2);
+            document.getElementById('payload-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scroll
+        }
+
+        function closePayloadModal() {
+            document.getElementById('payload-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('btn-start-clone').onclick = async () => {
+            const progress = document.getElementById('clone-progress');
+            const bar = document.getElementById('progress-bar');
+            const status = document.getElementById('progress-status');
+            const btn = document.getElementById('btn-start-clone');
+
+            // Get selected operations
+            const selectedOpIndices = Array.from(document.querySelectorAll('.op-checkbox:checked'))
+                .map(cb => parseInt(cb.dataset.idx));
+
+            const opsToApply = selectedOpIndices.map(idx => currentOps[idx]);
+
+            // Get selected target sites
+            const selectedTargetSiteIds = Array.from(document.querySelectorAll('.target-checkbox:checked'))
+                .map(cb => cb.value);
+
+            if (selectedTargetSiteIds.length === 0) {
+                alert("Please select at least one target site!");
+                return;
+            }
+
+            if (opsToApply.length === 0) {
+                alert("Please select at least one network to clone!");
+                return;
+            }
+
+            btn.disabled = true;
+            progress.classList.remove('hidden');
+            bar.style.width = '20%';
+            status.innerHTML = `<span class="animate-pulse">Parallel migration running for ${selectedTargetSiteIds.length} sites...</span>`;
+
+            try {
+                const res = await fetch('/api/cloner/apply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        target_site_ids: selectedTargetSiteIds,
+                        operations: opsToApply
+                    })
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    bar.style.width = '100%';
+                    const batchResults = data.results || {};
+                    let totalSuccess = 0;
+                    let totalFail = 0;
+
+                    // Parse parallel results
+                    Object.keys(batchResults).forEach(sid => {
+                        const siteResults = batchResults[sid];
+                        const failed = siteResults.filter(r => r.status && !r.status.includes('SUCCESS'));
+                        totalSuccess += (siteResults.length - failed.length);
+                        totalFail += failed.length;
+                    });
+
+                    if (totalFail === 0) {
+                        status.innerText = `SUCCESS: ALL SITES MIGRATED (${totalSuccess} ops total)`;
+                        status.className = "text-[10px] font-bold text-emerald-400 uppercase tracking-widest";
+                    } else {
+                        status.innerText = `COMPLETED: ${totalSuccess} SUCCESS, ${totalFail} FAIL across ${selectedTargetSiteIds.length} sites`;
+                        status.className = "text-[10px] font-bold text-amber-500 uppercase tracking-widest";
+                        console.error("Parallel Batch Report:", batchResults);
+                    }
+                } else {
+                    throw new Error(data.detail || "Application failed");
+                }
+            } catch (err) {
+                status.innerText = "CRITICAL ERROR: " + err.message;
+                status.className = "text-[10px] font-bold text-red-500 uppercase tracking-widest";
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        init();
+    </script>
+</body>
+
+</html>

@@ -189,15 +189,20 @@ async def search_logs(
     method: Optional[List[str]] = None,
     status_code: Optional[List[int]] = None,
     domain: Optional[str] = None,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
+    log_ids: Optional[List[str]] = None,
     skip: int = 0,
     limit: int = 50,
 ) -> tuple[List[dict], int]:
     """Search raw_logs with advanced filtering.
     
-    - keyword: full-text search across url, request_body_text, response_body_text
+    - keyword: searches across url, request_body_text, response_body_text
     - method: filter by HTTP methods (e.g. ["GET", "POST"])
     - status_code: filter by status codes (e.g. [200, 401])
     - domain: filter by domain
+    - from_date: logs after this timestamp
+    - to_date: logs before this timestamp
     """
     db = get_database()
     query = {}
@@ -211,8 +216,33 @@ async def search_logs(
     if status_code:
         query["status_code"] = {"$in": status_code}
 
+    if log_ids:
+        from bson import ObjectId
+        valid_ids = []
+        for lid in log_ids:
+            try: valid_ids.append(ObjectId(lid))
+            except: continue
+        if valid_ids:
+            query["_id"] = {"$in": valid_ids}
+
+    if from_date or to_date:
+        query["timestamp"] = {}
+        if from_date:
+            query["timestamp"]["$gte"] = from_date
+        if to_date:
+            query["timestamp"]["$lte"] = to_date
+
     if keyword:
-        query["$text"] = {"$search": keyword}
+        # Use regex for more flexible keyword matching if text index is not ideal
+        # or if we want to search URL even without $text index
+        regex = {"$regex": keyword, "$options": "i"}
+        query["$or"] = [
+            {"url": regex},
+            {"request_body_text": regex},
+            {"response_body_text": regex},
+            {"method": regex},
+            {"path": regex}
+        ]
 
     total = await db.raw_logs.count_documents(query)
     cursor = (
@@ -274,10 +304,12 @@ async def clear_all_data() -> dict:
     ep_count = (await db.endpoints.delete_many({})).deleted_count
     log_count = (await db.raw_logs.delete_many({})).deleted_count
     auth_count = (await db.auth_sessions.delete_many({})).deleted_count
+    bp_count = (await db.auth_blueprints.delete_many({})).deleted_count
     return {
         "endpoints_deleted": ep_count,
         "logs_deleted": log_count,
         "auth_sessions_deleted": auth_count,
+        "auth_blueprints_deleted": bp_count,
     }
 
 
@@ -335,3 +367,40 @@ async def get_all_auth_sessions() -> List[dict]:
     for s in sessions:
         s["_id"] = str(s["_id"])
     return sessions
+
+
+# ===== AUTH BLUEPRINT CRUD =====
+
+async def upsert_blueprint(blueprint_data: dict) -> str:
+    """Store or update an authentication blueprint. One per base_url."""
+    db = get_database()
+    now = datetime.now(timezone.utc)
+    
+    base_url = blueprint_data.get("base_url")
+    if not base_url:
+        return "error: missing base_url"
+        
+    blueprint_data["created_at"] = now
+    
+    result = await db.auth_blueprints.update_one(
+        {"base_url": base_url},
+        {"$set": blueprint_data},
+        upsert=True
+    )
+    return str(result.upserted_id) if result.upserted_id else "updated"
+
+
+async def get_blueprint_by_domain(domain: str) -> Optional[dict]:
+    """Retrieve a blueprint by domain (fuzzy match or exact origin)."""
+    db = get_database()
+    # Try exact match or if the base_url contains the domain
+    blueprint = await db.auth_blueprints.find_one({
+        "$or": [
+            {"base_url": {"$regex": domain}},
+            {"base_url": domain}
+        ]
+    })
+    
+    if blueprint:
+        blueprint["_id"] = str(blueprint["_id"])
+    return blueprint

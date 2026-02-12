@@ -114,6 +114,12 @@
             <nav class="flex gap-4">
                 <button id="nav-traffic"
                     class="text-sm font-medium text-indigo-400 border-b-2 border-indigo-500 pb-0.5">Live Proxy</button>
+                <a href="/offline" id="nav-offline"
+                    class="text-sm font-medium text-slate-500 hover:text-slate-300 pb-0.5">Offline Archives</a>
+                <a href="/cloner" id="nav-cloner"
+                    class="text-sm font-medium text-indigo-500/80 hover:text-indigo-400 pb-0.5 flex items-center gap-1.5 ring-1 ring-indigo-500/50 px-2 rounded-full">
+                    <i data-lucide="rocket" class="w-3 h-3"></i> Site Cloner
+                </a>
                 <a href="/internal/docs" target="_blank" id="nav-docs"
                     class="text-sm font-medium text-slate-500 hover:text-slate-300 pb-0.5 flex items-center gap-1.5">
                     System Docs <i data-lucide="external-link" class="w-3 h-3"></i>
@@ -123,6 +129,10 @@
                 class="flex items-center gap-1.5 text-[10px] text-orange-400 font-mono ml-4 uppercase tracking-widest">
                 <span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span> Connecting
             </span>
+            <button id="btn-pause"
+                class="ml-4 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[9px] font-bold text-slate-400 uppercase rounded border border-slate-700 transition-all flex items-center gap-1.5">
+                <i data-lucide="pause" class="w-3 h-3"></i> <span>Pause Capture</span>
+            </button>
         </div>
 
         <div class="flex items-center gap-3">
@@ -136,9 +146,14 @@
                 title="Refresh History">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
             </button>
+            <button id="btn-export-postman"
+                class="p-2 text-indigo-400 hover:text-white hover:bg-slate-800 rounded-md transition-all"
+                title="Export Filtered to Postman">
+                <i data-lucide="send" class="w-4 h-4"></i>
+            </button>
             <button id="btn-export"
                 class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all"
-                title="Export Postman Collection">
+                title="Export Filtered JSON">
                 <i data-lucide="download" class="w-4 h-4"></i>
             </button>
             <button id="btn-clear"
@@ -219,12 +234,17 @@
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left border-collapse table-fixed">
                         <thead
-                            class="sticky top-0 bg-darker z-10 text-[10px] text-slate-600 uppercase font-bold border-b border-subtle h-8">
-                            <tr>
-                                <th class="pl-4 w-12 text-center">Stat</th>
-                                <th class="w-16">Method</th>
-                                <th>Endpoint</th>
-                                <th class="w-20 text-right pr-4">Time</th>
+                            class="sticky top-0 bg-darker z-10 text-[10px] text-slate-600 uppercase font-bold border-b border-subtle">
+                            <tr class="h-10">
+                                <th class="pl-4 w-10 text-center">
+                                    <input type="checkbox" id="select-all"
+                                        class="rounded border-slate-700 bg-slate-900 focus:ring-indigo-600 focus:ring-offset-slate-900">
+                                </th>
+                                <th class="w-12 text-center text-[9px] uppercase font-bold text-slate-600">Stat</th>
+                                <th class="w-16 text-[9px] uppercase font-bold text-slate-600 text-left">Method</th>
+                                <th class="text-[9px] uppercase font-bold text-slate-600 text-left">Endpoint</th>
+                                <th class="w-10"></th>
+                                <th class="w-20 text-right pr-4 text-[9px] uppercase font-bold text-slate-600">Time</th>
                             </tr>
                         </thead>
                         <tbody id="traffic-rows" class="text-[11px] mono divide-y divide-[#ffffff03]">
@@ -251,6 +271,13 @@
                             class="tab-btn text-slate-500 hover:text-slate-300 h-full text-xs font-semibold px-1">Payload</button>
                         <button
                             class="tab-btn text-slate-500 hover:text-slate-300 h-full text-xs font-semibold px-1">Response</button>
+                        <button
+                            class="tab-btn text-slate-500 hover:text-slate-300 h-full text-xs font-semibold px-1">Filtered
+                            View</button>
+                        <button id="btn-copy-curl"
+                            class="ml-auto text-indigo-400 hover:text-indigo-300 text-[10px] font-bold uppercase flex items-center gap-1 transition-all">
+                            <i data-lucide="copy" class="w-3 h-3"></i> Copy cURL
+                        </button>
                     </div>
                     <div class="flex-1 overflow-auto p-6 space-y-6">
                         <div id="pane-blueprint" class="space-y-6">
@@ -281,6 +308,10 @@
                             </div>
                         </div>
                         <div id="pane-headers" class="hidden space-y-6">
+                            <div class="bg-darker p-4 rounded-lg border border-subtle font-mono text-[11px] break-all">
+                                <div class="text-[9px] text-slate-500 uppercase font-bold mb-2">Request URL</div>
+                                <div id="req-url" class="text-indigo-300 select-all"></div>
+                            </div>
                             <div id="req-headers"
                                 class="bg-darker p-4 rounded-lg border border-subtle space-y-1 font-mono text-[11px] overflow-x-auto">
                             </div>
@@ -295,6 +326,22 @@
                         <div id="pane-response" class="hidden">
                             <pre id="response-content"
                                 class="bg-darker p-4 rounded-lg border border-subtle text-[11px] mono text-emerald-400 overflow-auto"></pre>
+                        </div>
+                        <div id="pane-filtered-view" class="hidden space-y-4">
+                            <div class="flex items-center gap-3">
+                                <button id="btn-transfer-data"
+                                    class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded transition-all">
+                                    Transfer from Response
+                                </button>
+                                <span class="text-[10px] text-slate-500 italic">...or paste JSON below</span>
+                            </div>
+                            <textarea id="filtered-input" placeholder="Paste JSON here..."
+                                class="w-full h-32 bg-darker p-3 rounded-lg border border-subtle text-[11px] mono text-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
+                            <div id="filtered-results" class="space-y-4">
+                                <div class="text-center py-8 text-slate-600 italic text-xs">
+                                    No data processed yet.
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div
@@ -314,38 +361,69 @@
         const connStatus = document.getElementById('conn-status');
         const rowCount = document.getElementById('row-count');
         let allLogs = [];
+        let isPaused = false;
+        let selectedLog = null;
+        let selectedIds = new Set();
 
         async function loadInitialLogs() {
             try {
+                connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span> Syncing...';
                 const res = await fetch('/api/logs?limit=100');
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                if (data.logs) {
-                    allLogs = data.logs;
+                const logs = data.logs || data.data || [];
+                console.log(`[UI] Loaded ${logs.length} initial logs`);
+                if (logs) {
+                    allLogs = logs.map(l => ({ ...l, id: l.id || l._id }));
                     renderRows();
                 }
-            } catch (err) { console.error("Failed to load history", err); }
+            } catch (err) {
+                console.error("Failed to load history", err);
+                connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Load Error';
+                connStatus.className = "flex items-center gap-1.5 text-[10px] text-red-500 font-mono ml-4 uppercase tracking-widest";
+            }
         }
 
+        // Initial Load
+        loadInitialLogs();
+
         function connect() {
-            ws = new WebSocket(`ws://${location.host}/ws`);
-            ws.onopen = () => {
-                connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Live';
-                connStatus.className = "flex items-center gap-1.5 text-[10px] text-green-500 font-mono ml-4 uppercase tracking-widest";
-                loadInitialLogs();
-            };
-            ws.onmessage = (e) => {
-                const msg = JSON.parse(e.data);
-                if (msg.type === 'NEW_REQUEST') {
-                    allLogs.unshift(msg.data);
-                    if (allLogs.length > 300) allLogs.pop();
-                    renderRows();
-                }
-            };
-            ws.onclose = () => {
-                connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span> Reconnecting';
-                connStatus.className = "flex items-center gap-1.5 text-[10px] text-orange-400 font-mono ml-4 uppercase tracking-widest";
-                setTimeout(connect, 2000);
-            };
+            try {
+                ws = new WebSocket(`ws://${location.host}/ws`);
+                ws.onopen = () => {
+                    console.log("[WS] Connected");
+                    connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Live';
+                    connStatus.className = "flex items-center gap-1.5 text-[10px] text-green-500 font-mono ml-4 uppercase tracking-widest";
+                };
+                ws.onmessage = (e) => {
+                    if (isPaused) return;
+                    try {
+                        const msg = JSON.parse(e.data);
+                        console.log("[WS] Received:", msg.type);
+                        if (msg.type === 'NEW_REQUEST') {
+                            const newLog = msg.data;
+                            const normalized = { ...newLog, id: newLog.id || newLog._id };
+                            allLogs.unshift(normalized);
+                            if (allLogs.length > 500) allLogs.pop(); // Increased limit
+                            renderRows();
+                        }
+                    } catch (err) {
+                        console.error("[WS] Message parsing error", err, e.data);
+                    }
+                };
+                ws.onclose = () => {
+                    console.log("[WS] Closed, reconnecting...");
+                    connStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span> Reconnecting';
+                    connStatus.className = "flex items-center gap-1.5 text-[10px] text-orange-400 font-mono ml-4 uppercase tracking-widest";
+                    setTimeout(connect, 2000);
+                };
+                ws.onerror = (err) => {
+                    console.error("[WS] Socket error", err);
+                };
+            } catch (err) {
+                console.error("[WS] Connection attempt failed", err);
+                setTimeout(connect, 5000);
+            }
         }
         connect();
 
@@ -356,29 +434,47 @@
 
             const filtered = allLogs.filter(log => {
                 const mMatch = methods.includes(log.method);
-                const sMatch = statuses.includes(String(log.status_code)[0]);
+                const sMatch = !log.status_code || statuses.includes(String(log.status_code)[0]);
                 const qMatch = !search || log.url.toLowerCase().includes(search);
                 return mMatch && sMatch && qMatch;
             });
 
+            console.log(`[UI] Rendering ${filtered.length} of ${allLogs.length} logs`);
             rowsContainer.innerHTML = '';
             filtered.forEach(log => {
-                const row = document.createElement('tr');
-                row.className = 'row-hover cursor-pointer border-b border-[#ffffff03] group transition-all h-9';
-                row.id = `row-${log.id}`;
+                try {
+                    const row = document.createElement('tr');
+                    row.className = 'row-hover cursor-pointer border-b border-[#ffffff03] group transition-all h-9';
+                    const logId = log.id || log._id;
+                    row.id = `row-${logId}`;
 
-                const path = new URL(log.url).pathname;
-                const statusColor = getStatusColor(log.status_code);
+                    const statusColor = getStatusColor(log.status_code);
+                    const path = log.path || (log.url ? '/' + (log.url.split('/').slice(3).join('/') || '') : '/');
+                    const isSelected = selectedIds.has(logId);
+                    const isActive = selectedLog && (selectedLog.id === logId || selectedLog._id === logId);
 
-                row.innerHTML = `
-                    <td class="pl-4 text-center font-bold ${statusColor}">${log.status_code}</td>
-                    <td><span class="px-1.5 py-0.5 text-[9px] font-black rounded ${getMethodColor(log.method)} text-white opacity-90">${log.method}</span></td>
-                    <td class="truncate text-slate-400 group-hover:text-slate-200 transition-colors" title="${log.url}">${path}</td>
-                    <td class="pr-4 text-right text-[10px] text-slate-500 font-mono">${log.duration_ms}ms</td>
-                `;
+                    if (isActive) row.classList.add('row-active');
 
-                row.onclick = () => selectRequest(log.id, row);
-                rowsContainer.appendChild(row);
+                    row.innerHTML = `
+                        <td class="pl-4 text-center">
+                            <input type="checkbox" class="log-select rounded border-slate-800 bg-slate-900 focus:ring-indigo-600" ${isSelected ? 'checked' : ''} onclick="toggleSelect('${logId}', event)">
+                        </td>
+                        <td class="text-center font-bold ${statusColor}">${log.status_code || 0}</td>
+                        <td><span class="px-1.5 py-0.5 text-[9px] font-black rounded ${getMethodColor(log.method)} text-white opacity-90">${log.method}</span></td>
+                        <td class="truncate text-slate-400 group-hover:text-slate-200 transition-colors" title="${log.url || ''}">${path}</td>
+                        <td class="text-center">
+                            <a href="/detail/${logId}" target="_blank" onclick="event.stopPropagation()" class="p-1 text-slate-600 hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all">
+                                <i data-lucide="external-link" class="w-3 h-3"></i>
+                            </a>
+                        </td>
+                        <td class="pr-4 text-right text-[10px] text-slate-500 font-mono">${log.duration_ms || 0}ms</td>
+                    `;
+
+                    row.onclick = () => selectRequest(logId, row);
+                    rowsContainer.appendChild(row);
+                } catch (e) {
+                    console.error("[UI] Error rendering row:", e, log);
+                }
             });
             rowCount.innerText = filtered.length;
             lucide.createIcons();
@@ -403,12 +499,39 @@
             return colors[m] || 'bg-slate-700';
         }
 
+        function toggleSelect(id, event) {
+            event.stopPropagation();
+            if (selectedIds.has(id)) selectedIds.delete(id);
+            else selectedIds.add(id);
+            updatePostmanBtnStatus();
+        }
+
+        document.getElementById('select-all').onclick = (e) => {
+            if (e.target.checked) allLogs.forEach(l => selectedIds.add(l.id));
+            else selectedIds.clear();
+            renderRows();
+            updatePostmanBtnStatus();
+        };
+
+        function updatePostmanBtnStatus() {
+            const btn = document.getElementById('btn-export-postman');
+            const btnJson = document.getElementById('btn-export');
+            if (selectedIds.size > 0) {
+                btn.classList.add('animate-bounce');
+                btnJson.classList.add('text-indigo-400');
+            } else {
+                btn.classList.remove('animate-bounce');
+                btnJson.classList.remove('text-indigo-400');
+            }
+        }
+
         async function selectRequest(logId, element) {
             document.querySelectorAll('#traffic-rows tr').forEach(r => r.classList.remove('row-active'));
             element.classList.add('row-active');
             try {
                 const res = await fetch(`/api/logs/${logId}`);
-                renderInspector(await res.json());
+                selectedLog = await res.json();
+                renderInspector(selectedLog);
             } catch (err) { console.error(err); }
         }
 
@@ -434,7 +557,8 @@
                 depContainer.innerHTML += `<span class="px-2 py-0.5 rounded-full border border-slate-700 text-slate-500 text-[9px] flex items-center gap-1"><i data-lucide="link" class="w-2.5 h-2.5"></i> ${dep}</span>`;
             });
 
-            document.getElementById('req-headers').innerHTML = formatHeaders(data.request_headers, 'Request');
+            document.getElementById('req-url').innerText = data.url;
+            document.getElementById('req-headers').innerHTML = formatHeaders(data.request_headers || {}, 'Request');
             document.getElementById('res-headers').innerHTML = formatHeaders(data.response_headers, 'Response');
             document.getElementById('payload-content').innerText = formatBody(data.request_body);
             document.getElementById('response-content').innerText = formatBody(data.response_body);
@@ -457,13 +581,23 @@
 
         async function downloadExport(type) {
             try {
-                const res = await fetch(`/api/export/${type}`);
+                // Collect current filters
+                const methods = Array.from(document.querySelectorAll('.filter-meth:checked')).map(c => c.value).join(',');
+                const statuses = Array.from(document.querySelectorAll('.filter-stat:checked')).map(c => c.value).join(',');
+                const search = document.getElementById('global-search').value;
+                const ids = Array.from(selectedIds).join(',');
+
+                let query = `method=${methods}&status=${statuses}`;
+                if (search) query += `&keyword=${encodeURIComponent(search)}`;
+                if (ids) query += `&ids=${ids}`;
+
+                const res = await fetch(`/api/logs/export/json?${query}`);
                 const data = await res.json();
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `aruba-api-${type}.json`;
+                a.download = `aruba-api-${new Date().getTime()}.json`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -471,15 +605,42 @@
             } catch (err) { alert("Export failed"); }
         }
 
-        document.getElementById('btn-export').onclick = () => downloadExport('postman');
+        document.getElementById('btn-export').onclick = () => downloadExport('json');
+
+        async function downloadPostman() {
+            try {
+                // Collect current filters
+                const methods = Array.from(document.querySelectorAll('.filter-meth:checked')).map(c => c.value).join(',');
+                const statuses = Array.from(document.querySelectorAll('.filter-stat:checked')).map(c => c.value).join(',');
+                const search = document.getElementById('global-search').value;
+                const ids = Array.from(selectedIds).join(',');
+
+                let query = `method=${methods}&status=${statuses}`;
+                if (search) query += `&keyword=${encodeURIComponent(search)}`;
+                if (ids) query += `&ids=${ids}`;
+
+                const res = await fetch(`/api/logs/export/postman?${query}`);
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `aruba-postman-${new Date().getTime()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (err) { alert("Postman export failed"); }
+        }
+        document.getElementById('btn-export-postman').onclick = downloadPostman;
         document.getElementById('btn-sync').onclick = async () => {
             await loadInitialLogs();
             console.log("History refreshed from database.");
         };
 
         document.getElementById('btn-clear').onclick = async () => {
-            if (confirm("Clear all captured blueprints?")) {
-                await fetch('/api/data', { method: 'DELETE' });
+            if (confirm("Clear all captured logs?")) {
+                await fetch('/api/logs', { method: 'DELETE' });
                 allLogs = []; renderRows();
             }
         };
@@ -489,11 +650,159 @@
             btn.onclick = () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('text-indigo-400', 'border-b-2', 'border-indigo-500', 'active'));
                 btn.classList.add('text-indigo-400', 'border-b-2', 'border-indigo-500', 'active');
-                const label = btn.innerText.toLowerCase();
-                ['blueprint', 'headers', 'payload', 'response'].forEach(p => document.getElementById(`pane-${p}`).classList.add('hidden'));
+                const label = btn.innerText.toLowerCase().replace(' ', '-');
+                ['blueprint', 'headers', 'payload', 'response', 'filtered-view'].forEach(p => document.getElementById(`pane-${p}`).classList.add('hidden'));
                 document.getElementById(`pane-${label}`).classList.remove('hidden');
             }
         });
+
+        // Filtered View Logic
+        const filterInput = document.getElementById('filtered-input');
+        const btnTransfer = document.getElementById('btn-transfer-data');
+
+        btnTransfer.onclick = () => {
+            const raw = document.getElementById('response-content').innerText;
+            if (raw && raw !== "No payload/response captured.") {
+                filterInput.value = raw;
+                processFilteredView(raw);
+            } else {
+                alert("No raw response data available to transfer.");
+            }
+        };
+
+        filterInput.oninput = () => {
+            processFilteredView(filterInput.value);
+        };
+
+        function processFilteredView(jsonString) {
+            const resultsContainer = document.getElementById('filtered-results');
+            if (!jsonString.trim()) {
+                resultsContainer.innerHTML = '<div class="text-center py-8 text-slate-600 italic text-xs">No data processed yet.</div>';
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonString);
+                const apMap = new Map();
+
+                // Extract wired elements
+                const wiredElements = data.elements || (data.kind === 'wiredNetworks' ? [data] : []);
+                if (wiredElements.length === 0 && !data.wirelessNetworks) {
+                    // Try top-level wireless if present
+                    const sampleWifi = data.networkName || data.ssid;
+                    if (sampleWifi) {
+                        // Singular object or something else?
+                    }
+                }
+
+                wiredElements.forEach(wired => {
+                    const vlanId = wired.vlanId;
+                    (wired.wirelessNetworks || []).forEach(wifi => {
+                        const ssid = wifi.networkName || wifi.ssid;
+                        const psk = wifi.preSharedKey || 'N/A';
+                        const ssidVlan = wifi.vlanId || vlanId || 'Auto';
+
+                        (wifi.accessPoints || []).forEach(ap => {
+                            const dId = ap.deviceId;
+                            if (!dId) return;
+
+                            if (!apMap.has(dId)) {
+                                apMap.set(dId, {
+                                    deviceId: dId,
+                                    deviceName: ap.deviceName || 'Unknown AP',
+                                    deviceModel: ap.deviceModel || 'N/A',
+                                    ssids: []
+                                });
+                            }
+
+                            const existing = apMap.get(dId).ssids.find(s => s.name === ssid);
+                            if (!existing) {
+                                apMap.get(dId).ssids.push({
+                                    name: ssid,
+                                    key: psk,
+                                    vlan: ssidVlan
+                                });
+                            }
+                        });
+                    });
+                });
+
+                const sortedAps = Array.from(apMap.values()).sort((a, b) => a.deviceName.localeCompare(b.deviceName));
+
+                if (sortedAps.length === 0) {
+                    resultsContainer.innerHTML = '<div class="text-center py-8 text-slate-600 italic text-xs">No Access Points found in this JSON structure.</div>';
+                    return;
+                }
+
+                resultsContainer.innerHTML = sortedAps.map(ap => `
+                    <div class="bg-darker/50 p-3 rounded-lg border border-subtle space-y-2">
+                        <div class="flex items-center justify-between border-b border-subtle pb-1.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="router" class="w-3.5 h-3.5 text-indigo-400"></i>
+                                <span class="text-xs font-bold text-white">${ap.deviceName}</span>
+                                <span class="text-[9px] bg-slate-800 px-1 py-0.5 rounded text-slate-500 font-mono">${ap.deviceModel}</span>
+                            </div>
+                            <span class="text-[9px] font-mono text-slate-600">${ap.deviceId}</span>
+                        </div>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${ap.ssids.map(s => `
+                                <div class="bg-slate-900/30 p-2 rounded text-[10px] flex items-center justify-between group border border-transparent hover:border-slate-800 transition-all">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex flex-col">
+                                            <span class="text-indigo-300 font-bold">${s.name}</span>
+                                            <span class="text-[8px] text-slate-600 uppercase">VLAN ${s.vlan}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[8px] text-slate-600 uppercase font-bold tracking-tighter">PSK</div>
+                                        <div class="font-mono text-emerald-500/80 select-all hover:text-emerald-400 transition-colors">${s.key}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+                lucide.createIcons();
+
+            } catch (e) {
+                console.error("Filter error:", e);
+                resultsContainer.innerHTML = `<div class="bg-red-500/10 p-3 rounded border border-red-500/20 text-red-400 text-[10px] font-mono whitespace-pre-wrap"><strong>PARSE ERROR:</strong> ${e.message}</div>`;
+            }
+        }
+
+        // Pause/Resume Logic
+        const btnPause = document.getElementById('btn-pause');
+        btnPause.onclick = () => {
+            isPaused = !isPaused;
+            if (isPaused) {
+                btnPause.querySelector('span').innerText = 'Resume Capture';
+                btnPause.querySelector('i').setAttribute('data-lucide', 'play');
+                btnPause.classList.replace('text-slate-400', 'text-green-400');
+            } else {
+                btnPause.querySelector('span').innerText = 'Pause Capture';
+                btnPause.querySelector('i').setAttribute('data-lucide', 'pause');
+                btnPause.classList.replace('text-green-400', 'text-slate-400');
+            }
+            lucide.createIcons();
+        };
+
+        // Copy as cURL Utility
+        document.getElementById('btn-copy-curl').onclick = () => {
+            if (!selectedLog) return alert("Select a request first");
+            let curl = `curl --location '${selectedLog.url}' \\\n--request ${selectedLog.method} \\\n`;
+            Object.entries(selectedLog.request_headers || {}).forEach(([k, v]) => {
+                if (['content-length', 'host'].includes(k.toLowerCase())) return;
+                curl += `--header '${k}: ${v}' \\\n`;
+            });
+            if (selectedLog.request_body) {
+                const body = typeof selectedLog.request_body === 'object'
+                    ? JSON.stringify(selectedLog.request_body)
+                    : selectedLog.request_body;
+                curl += `--data '${body.replace(/'/g, "'\\''")}'`;
+            }
+            navigator.clipboard.writeText(curl.trim().replace(/\\\n$/, ''));
+            alert("cURL copied to clipboard!");
+        };
 
         lucide.createIcons();
     </script>
