@@ -1,12 +1,12 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-    baseURL: '/api' // Adjust to the correct API domain or proxy if needed
+    baseURL: '/api' // All requests must start with /api for backend router to catch them
 });
 
 // Request Interceptor: Attach Token
 apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }

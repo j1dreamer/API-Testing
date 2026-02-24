@@ -1,0 +1,1663 @@
+﻿{
+    "kind":  "dashboardResponse",
+    "samplePeriodSeconds":  3600,
+    "historyDurationSeconds":  86400,
+    "healthOverview":  {
+                           "currentScore":  {
+                                                "score":  68,
+                                                "scoreSeverity":  "good",
+                                                "conditionsCount":  7,
+                                                "activeAlertsCount":  1
+                                            },
+                           "scoreTrend":  "decreasing",
+                           "samplePeriodSeconds":  3600,
+                           "historicalScore":  [
+                                                   {
+                                                       "sampleTime":  1771818600,
+                                                       "healthScore":  {
+                                                                           "score":  65,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771822200,
+                                                       "healthScore":  {
+                                                                           "score":  66,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771825800,
+                                                       "healthScore":  {
+                                                                           "score":  65,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771829400,
+                                                       "healthScore":  {
+                                                                           "score":  66,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771833000,
+                                                       "healthScore":  {
+                                                                           "score":  67,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  18,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771836600,
+                                                       "healthScore":  {
+                                                                           "score":  78,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771840200,
+                                                       "healthScore":  {
+                                                                           "score":  80,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771843800,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771847400,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771851000,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771854600,
+                                                       "healthScore":  {
+                                                                           "score":  78,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771858200,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771861800,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771865400,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771869000,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771872600,
+                                                       "healthScore":  {
+                                                                           "score":  78,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771876200,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771879800,
+                                                       "healthScore":  {
+                                                                           "score":  80,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771883400,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771887000,
+                                                       "healthScore":  {
+                                                                           "score":  79,
+                                                                           "scoreSeverity":  "good",
+                                                                           "conditionsCount":  6,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771890600,
+                                                       "healthScore":  {
+                                                                           "score":  66,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  30,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771894200,
+                                                       "healthScore":  {
+                                                                           "score":  66,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771897800,
+                                                       "healthScore":  {
+                                                                           "score":  65,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  42,
+                                                                           "activeAlertsCount":  6
+                                                                       }
+                                                   },
+                                                   {
+                                                       "sampleTime":  1771901400,
+                                                       "healthScore":  {
+                                                                           "score":  66,
+                                                                           "scoreSeverity":  "fair",
+                                                                           "conditionsCount":  35,
+                                                                           "activeAlertsCount":  5
+                                                                       }
+                                                   }
+                                               ]
+                       },
+    "alertsOverview":  {
+                           "kind":  "alertsSummary",
+                           "activeInfoAlertsCount":  0,
+                           "activeMinorAlertsCount":  0,
+                           "activeMajorAlertsCount":  1
+                       },
+    "devicesOverview":  {
+                            "goodCount":  1,
+                            "fairCount":  0,
+                            "poorCount":  1,
+                            "noneCount":  0,
+                            "accessPoints":  {
+                                                 "online":  0,
+                                                 "offline":  1
+                                             },
+                            "switches":  {
+                                             "online":  1,
+                                             "offline":  0
+                                         },
+                            "stacks":  {
+                                           "online":  0,
+                                           "offline":  0
+                                       },
+                            "wifiRouters":  {
+                                                "online":  0,
+                                                "offline":  0
+                                            },
+                            "gateways":  {
+                                             "online":  0,
+                                             "offline":  0
+                                         }
+                        },
+    "clientsOverview":  {
+                            "totalClient":  {
+                                                "goodCount":  16,
+                                                "fairCount":  0,
+                                                "poorCount":  0,
+                                                "noneCount":  0,
+                                                "total":  16,
+                                                "average":  13,
+                                                "maximum":  17
+                                            },
+                            "wirelessClient":  {
+                                                   "goodCount":  0,
+                                                   "fairCount":  0,
+                                                   "poorCount":  0,
+                                                   "noneCount":  0,
+                                                   "total":  0,
+                                                   "average":  0,
+                                                   "maximum":  0
+                                               },
+                            "wiredClient":  {
+                                                "goodCount":  16,
+                                                "fairCount":  0,
+                                                "poorCount":  0,
+                                                "noneCount":  0,
+                                                "total":  16,
+                                                "average":  13,
+                                                "maximum":  17
+                                            },
+                            "vpnClient":  null
+                        },
+    "networksOverview":  {
+                             "goodCount":  4,
+                             "fairCount":  0,
+                             "poorCount":  6,
+                             "noneCount":  2,
+                             "wirelessNetworks":  8,
+                             "inactiveWirelessNetworks":  2,
+                             "wiredNetworks":  4,
+                             "inactiveWiredNetworks":  0,
+                             "vpnNetworks":  null,
+                             "inactiveVpnNetworks":  null,
+                             "samplePeriodSeconds":  600,
+                             "historicalNetworksUsage":  [
+                                                             {
+                                                                 "sampleTime":  1771818600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13442006,
+                                                                 "wiredDownstreamDataTransferredInBytes":  22096657,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771819200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13273731,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20011926,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771819800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13517804,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20686101,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771820400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13485691,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20587376,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771821000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13484659,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20302340,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771821600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  15138550,
+                                                                 "wiredDownstreamDataTransferredInBytes":  23440400,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771822200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13400145,
+                                                                 "wiredDownstreamDataTransferredInBytes":  22541123,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771822800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13613541,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20663743,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771823400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13694166,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21252090,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771824000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13481603,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20783590,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771824600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13538415,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20139678,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771825200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13869832,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20607492,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771825800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13762304,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20687393,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771826400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13510316,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20371450,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771827000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13786046,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20286533,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771827600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13396419,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19706528,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771828200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13543018,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20636712,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771828800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13520409,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20327854,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771829400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13409054,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20410601,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771830000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13738485,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21086811,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771830600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13497898,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18955037,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771831200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13840443,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21173825,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771831800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13596671,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19138733,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771832400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13554593,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19131630,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771833000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13302271,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18990163,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771833600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13559743,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19923906,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771834200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13743678,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19840444,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771834800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13512456,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19045454,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771835400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13969358,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21835760,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771836000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13791490,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19304509,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771836600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13517213,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19048533,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771837200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13713376,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19633339,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771837800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14382125,
+                                                                 "wiredDownstreamDataTransferredInBytes":  24858098,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771838400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13637863,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20859561,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771839000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13778875,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19291543,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771839600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13471429,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17034999,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771840200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13497170,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18811071,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771840800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13584989,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19233460,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771841400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13792790,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19483628,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771842000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13653526,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19104430,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771842600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13601316,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18955053,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771843200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13845488,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20444143,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771843800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13645241,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19077816,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771844400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13778085,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19099618,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771845000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14061615,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20014761,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771845600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13887766,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19360656,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771846200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13854288,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17654874,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771846800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13946495,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20419611,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771847400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14004873,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19698247,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771848000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13821074,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19603851,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771848600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14224724,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19949155,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771849200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13939319,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19968635,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771849800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14053992,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19390426,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771850400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13927691,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20384617,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771851000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13676821,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18927946,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771851600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13526744,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17906097,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771852200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13913776,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18865246,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771852800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14069944,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19741999,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771853400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13796649,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19317310,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771854000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14185789,
+                                                                 "wiredDownstreamDataTransferredInBytes":  32088699,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771854600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13933810,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19306530,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771855200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13803117,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19356148,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771855800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13965117,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19760710,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771856400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13747625,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19205120,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771857000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14029548,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19412133,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771857600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14204722,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20551783,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771858200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13866844,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19255756,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771858800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13831158,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19192855,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771859400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13887320,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19670109,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771860000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13619005,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18872051,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771860600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14031808,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19423987,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771861200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13891368,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20199450,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771861800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13856312,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19265787,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771862400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13689301,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19111118,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771863000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13583328,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17020123,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771863600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12520313,
+                                                                 "wiredDownstreamDataTransferredInBytes":  16851825,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771864200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13308581,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19313457,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771864800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12839605,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18539017,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771865400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12779988,
+                                                                 "wiredDownstreamDataTransferredInBytes":  16103128,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771866000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12813170,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17352145,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771866600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13241561,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18411508,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771867200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12817223,
+                                                                 "wiredDownstreamDataTransferredInBytes":  16800570,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771867800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12620383,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17307988,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771868400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12889872,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18404517,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771869000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12991509,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17701144,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771869600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  11967706,
+                                                                 "wiredDownstreamDataTransferredInBytes":  16805063,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771870200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14119963,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18945968,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771870800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13141207,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18073198,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771871400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12869689,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17412658,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771872000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13157637,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18883111,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771872600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12793448,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17385957,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771873200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12823240,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17369072,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771873800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13439993,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20316659,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771874400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12867803,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17522417,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771875000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12711335,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17213839,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771875600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13281483,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19136703,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771876200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13078643,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18686364,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771876800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13508173,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18595390,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771877400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13365077,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18592068,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771878000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13123625,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17921511,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771878600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13466899,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20259900,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771879200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13086561,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18782878,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771879800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13033965,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17636626,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771880400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12822502,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17383545,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771881000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14212118,
+                                                                 "wiredDownstreamDataTransferredInBytes":  181299109,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771881600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13199484,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17920318,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771882200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  12951547,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17459737,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771882800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13188754,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18796063,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771883400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13161969,
+                                                                 "wiredDownstreamDataTransferredInBytes":  17771697,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771884000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13830269,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19164152,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771884600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14173183,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20047012,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771885200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13790719,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19240975,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771885800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14005414,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19423889,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771886400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14149883,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20491659,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771887000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14002621,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19520142,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771887600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14084440,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19613484,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771888200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14121680,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19950225,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771888800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14255136,
+                                                                 "wiredDownstreamDataTransferredInBytes":  28447166,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771889400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13946867,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19246729,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771890000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14034577,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19405878,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771890600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  13848352,
+                                                                 "wiredDownstreamDataTransferredInBytes":  18560252,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771891200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14144724,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19546879,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771891800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14352213,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20476128,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771892400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14156318,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19874227,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771893000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14304046,
+                                                                 "wiredDownstreamDataTransferredInBytes":  19950036,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771893600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14384813,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21485801,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771894200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14686502,
+                                                                 "wiredDownstreamDataTransferredInBytes":  23334137,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771894800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14444842,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21131819,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771895400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14131373,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20681544,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771896000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14234000,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20415429,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771896600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14172302,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20094076,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771897200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  21044714,
+                                                                 "wiredDownstreamDataTransferredInBytes":  22152702,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771897800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14687298,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20616380,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771898400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  15180534,
+                                                                 "wiredDownstreamDataTransferredInBytes":  20917108,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771899000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  29033661,
+                                                                 "wiredDownstreamDataTransferredInBytes":  253357401,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771899600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  20640146,
+                                                                 "wiredDownstreamDataTransferredInBytes":  245034299,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771900200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  20240069,
+                                                                 "wiredDownstreamDataTransferredInBytes":  35636298,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771900800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  20390140,
+                                                                 "wiredDownstreamDataTransferredInBytes":  24400657,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771901400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  16046033,
+                                                                 "wiredDownstreamDataTransferredInBytes":  21725095,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771902000,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  70326105,
+                                                                 "wiredDownstreamDataTransferredInBytes":  24064585,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771902600,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  43626563,
+                                                                 "wiredDownstreamDataTransferredInBytes":  43602156,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771903200,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  23148268,
+                                                                 "wiredDownstreamDataTransferredInBytes":  24870178,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771903800,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  24682980,
+                                                                 "wiredDownstreamDataTransferredInBytes":  26202325,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             },
+                                                             {
+                                                                 "sampleTime":  1771904400,
+                                                                 "wirelessUpstreamDataTransferredInBytes":  0,
+                                                                 "wirelessDownstreamDataTransferredInBytes":  0,
+                                                                 "wiredUpstreamDataTransferredInBytes":  14738665,
+                                                                 "wiredDownstreamDataTransferredInBytes":  36167311,
+                                                                 "vpnUpstreamDataTransferredInBytes":  null,
+                                                                 "vpnDownstreamDataTransferredInBytes":  null
+                                                             }
+                                                         ]
+                         },
+    "applicationsOverview":  {
+                                 "applicationsDataPending":  false,
+                                 "applicationsTotal":  {
+                                                           "upstreamDataTransferredInBytes":  2120940700,
+                                                           "downstreamDataTransferredInBytes":  3527600225,
+                                                           "transferredDataByCategory":  [
+                                                                                             {
+                                                                                                 "applicationCategory":  "wired",
+                                                                                                 "upstreamDataTransferredInBytes":  2120940700,
+                                                                                                 "downstreamDataTransferredInBytes":  3527600225
+                                                                                             }
+                                                                                         ]
+                                                       }
+                             },
+    "policiesOverview":  {
+                             "totalCount":  2,
+                             "activeCount":  2,
+                             "policiesCounters":  [
+                                                      {
+                                                          "policyType":  "traffic",
+                                                          "entityType":  "traffic",
+                                                          "totalCount":  1,
+                                                          "activeCount":  1
+                                                      },
+                                                      {
+                                                          "policyType":  "network",
+                                                          "entityType":  "network",
+                                                          "totalCount":  1,
+                                                          "activeCount":  1
+                                                      }
+                                                  ]
+                         },
+    "profilesOverview":  {
+                             "portsCount":  0,
+                             "radiusCount":  1
+                         },
+    "securityThreatsOverview":  {
+                                    "totalSecurityThreatBlocked":  0,
+                                    "totalSecurityThreatPerSeverity":  [
+
+                                                                       ],
+                                    "totalSecurityThreatPerCategory":  [
+
+                                                                       ]
+                                },
+    "wansOverview":  {
+                         "goodCount":  0,
+                         "fairCount":  0,
+                         "poorCount":  0,
+                         "wansOverview":  [
+
+                                          ],
+                         "samplePeriodSeconds":  600,
+                         "historicalNetworksUsage":  [
+
+                                                     ]
+                     }
+}

@@ -8,11 +8,7 @@ import {
 } from 'lucide-react';
 
 const Cloner = () => {
-    // --- 1. Quản lý State (Logic gốc) ---
-    const [authStatus, setAuthStatus] = useState({ linked: false, checking: true });
-    const [loginForm, setLoginForm] = useState({ username: '', password: '', loading: false, error: '' });
-    const [showLoginPanel, setShowLoginPanel] = useState(false);
-
+    // --- 1. Quản lý State ---
     const [sourceMode, setSourceMode] = useState('captured');
     const [sourceSites, setSourceSites] = useState([]);
     const [selectedSourceId, setSelectedSourceId] = useState('');
@@ -33,8 +29,8 @@ const Cloner = () => {
 
     // --- 2. Khởi tạo & Đồng bộ hóa ---
     useEffect(() => {
-        checkAuthStatus();
         loadSourceSites(sourceMode);
+        loadTargetSites();
     }, []);
 
     useEffect(() => {
@@ -44,50 +40,18 @@ const Cloner = () => {
     }, [sourceMode]);
 
     useEffect(() => {
-        if (executionResult) setCurrentStep(4);
-        else if (showPreview) setCurrentStep(3);
-        else if (selectedSourceId) setCurrentStep(2);
+        if (executionResult) setCurrentStep(3);
+        else if (showPreview) setCurrentStep(2);
         else setCurrentStep(1);
-    }, [showPreview, selectedSourceId, executionResult]);
+    }, [showPreview, executionResult]);
 
     // --- 3. Các hàm Logic xử lý API ---
-    const checkAuthStatus = async () => {
-        try {
-            const res = await apiClient.get('/cloner/auth-session');
-            const isLinked = !!res.data.token_value;
-            setAuthStatus({ linked: isLinked, checking: false });
-            if (isLinked) {
-                loadTargetSites();
-                setShowLoginPanel(false);
-            } else {
-                setShowLoginPanel(true);
-            }
-        } catch (error) {
-            setAuthStatus({ linked: false, checking: false });
-        }
-    };
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-        setLoginForm(prev => ({ ...prev, loading: true, error: '' }));
-        try {
-            await apiClient.post('/cloner/login', {
-                username: loginForm.username,
-                password: loginForm.password
-            });
-            setLoginForm(prev => ({ ...prev, loading: false }));
-            checkAuthStatus();
-        } catch (error) {
-            const msg = error.response?.data?.detail || "Đăng nhập thất bại.";
-            setLoginForm(prev => ({ ...prev, loading: false, error: msg }));
-        }
-    };
 
     const loadSourceSites = async (mode) => {
         try {
             const endpoint = mode === 'live' ? '/cloner/live-sites' : '/cloner/sites';
             const res = await apiClient.get(endpoint);
-            setSourceSites(res.data || []);
+            setSourceSites(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             if (mode === 'live') setSourceSites([]);
         }
@@ -96,7 +60,7 @@ const Cloner = () => {
     const loadTargetSites = async () => {
         try {
             const res = await apiClient.get('/cloner/target-sites');
-            setTargetSites(res.data || []);
+            setTargetSites(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
             console.error("Failed to load target sites:", error);
         }
@@ -111,7 +75,7 @@ const Cloner = () => {
                 site_id: selectedSourceId,
                 source: sourceMode
             });
-            const ops = res.data.operations || [];
+            const ops = Array.isArray(res.data?.operations) ? res.data.operations : [];
             setPreviewOps(ops);
             setSelectedOpsIndices(new Set(ops.map((_, i) => i)));
             setShowPreview(true);
@@ -169,7 +133,7 @@ const Cloner = () => {
                 <div className="bg-[#020617]/80 backdrop-blur-xl py-6 border-b border-white/5 -mx-8 px-12 mb-10 transition-all duration-300">
                     <div className="max-w-4xl mx-auto relative px-4">
                         <div className="flex justify-between items-center relative z-10">
-                            {['Auth', 'Source', 'Review', 'Execute'].map((step, idx) => {
+                            {['Source', 'Review', 'Execute'].map((step, idx) => {
                                 const stepNum = idx + 1;
                                 const isActive = currentStep >= stepNum;
                                 const isCurrent = currentStep === stepNum;
@@ -179,8 +143,8 @@ const Cloner = () => {
                                             isActive ? 'bg-slate-900 border-blue-500/50 text-blue-400' : 'bg-slate-950 border-white/5 text-slate-700'
                                             }`}>
                                             {isActive && !isCurrent ? <CheckCircle size={20} /> :
-                                                idx === 0 ? <Key size={20} /> : idx === 1 ? <Server size={20} /> :
-                                                    idx === 2 ? <CheckSquare size={20} /> : <Rocket size={20} />}
+                                                idx === 0 ? <Server size={20} /> :
+                                                    idx === 1 ? <CheckSquare size={20} /> : <Rocket size={20} />}
                                         </div>
                                         <span className={`mt-3 text-[9px] font-black uppercase tracking-[0.2em] ${isCurrent ? 'text-white' : 'text-slate-600'}`}>
                                             {step}
@@ -192,70 +156,15 @@ const Cloner = () => {
                         <div className="absolute top-6 left-0 w-full h-[2px] bg-white/5 -z-0"></div>
                         <div
                             className="absolute top-6 left-0 h-[2px] bg-gradient-to-r from-blue-600 to-cyan-500 -z-0 transition-all duration-1000 shadow-[0_0_10px_rgba(37,99,235,0.5)]"
-                            style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
+                            style={{ width: `${((currentStep - 1) / 2) * 100}%` }}
                         ></div>
                     </div>
                 </div>
 
                 {/* Workflow Cards */}
                 <div className="grid grid-cols-1 gap-12 max-w-6xl mx-auto">
-                    {/* Step 1: Authentication */}
-                    <section className={`relative group transition-all duration-700 ${currentStep > 1 ? 'opacity-40 blur-[1px] scale-[0.98]' : 'scale-100'}`}>
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-700 pointer-events-none"></div>
-                        <div className="relative backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-10 shadow-2xl">
-                            <div className="flex items-center gap-4 mb-10">
-                                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                                    <ShieldCheck size={24} />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white tracking-tight">Portal Authentication</h2>
-                                    <p className="text-sm text-slate-500">Establish a secure link to apply clones</p>
-                                </div>
-                            </div>
-
-                            {(!authStatus.linked || showLoginPanel) ? (
-                                <form onSubmit={handleLogin} className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email Address</label>
-                                        <input
-                                            type="text"
-                                            className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                            value={loginForm.username}
-                                            onChange={e => setLoginForm({ ...loginForm, username: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Password</label>
-                                        <input
-                                            type="password"
-                                            className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                            value={loginForm.password}
-                                            onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        disabled={loginForm.loading}
-                                        className="h-14 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-blue-400 hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50"
-                                    >
-                                        {loginForm.loading ? 'Verifying...' : 'Establish Link'}
-                                    </button>
-                                </form>
-                            ) : (
-                                <div className="flex items-center justify-between p-6 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
-                                    <div className="flex items-center gap-4 text-emerald-400 font-bold uppercase tracking-widest text-xs">
-                                        <ShieldCheck size={20} />
-                                        Authenticated Session Active
-                                    </div>
-                                    <button onClick={() => setShowLoginPanel(true)} className="text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest underline underline-offset-4">Change Account</button>
-                                </div>
-                            )}
-                            {loginForm.error && <p className="mt-4 text-rose-500 text-xs font-bold">{loginForm.error}</p>}
-                        </div>
-                    </section>
-
-                    {/* Step 2: Source Selection */}
-                    <section className={`relative transition-all duration-700 ${!authStatus.linked ? 'opacity-20 grayscale pointer-events-none' : 'opacity-100'} ${currentStep > 2 ? 'opacity-40 blur-[1px]' : ''}`}>
+                    {/* Step 1: Source Selection */}
+                    <section className={`relative transition-all duration-700 ${currentStep > 1 ? 'opacity-40 blur-[1px]' : ''}`}>
                         <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-10 shadow-2xl">
                             <div className="flex items-center gap-4 mb-10">
                                 <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-400 border border-indigo-500/20">
@@ -318,7 +227,7 @@ const Cloner = () => {
                         </div>
                     </section>
 
-                    {/* Step 3: Review & Execution */}
+                    {/* Step 2: Review & Execution */}
                     {showPreview && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-fade-in pb-20">
 

@@ -8,20 +8,41 @@ import Cloner from './pages/Cloner';
 import './App.css';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
+    const verifySession = async () => {
+      const storedToken = sessionStorage.getItem('token');
+      if (!storedToken) {
+        setCheckingAuth(false);
+        return;
+      }
+      try {
+        // Must use apiClient so /api prefix is applied
+        const { default: apiClient } = await import('./api/apiClient');
+        const res = await apiClient.get('/cloner/auth-session');
+        if (res.data && res.data.token_value) {
+          setIsLoggedIn(true);
+        } else {
+          sessionStorage.removeItem('token');
+        }
+      } catch (error) {
+        sessionStorage.removeItem('token');
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    verifySession();
+
     const handleUnauthorized = () => {
       setIsLoggedIn(false);
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
     };
 
-    // Listen for the custom event dispatched by apiClient interceptor
     window.addEventListener('unauthorized', handleUnauthorized);
-
-    return () => {
-      window.removeEventListener('unauthorized', handleUnauthorized);
-    };
+    return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, []);
 
   const handleLoginSuccess = () => {
@@ -30,8 +51,16 @@ function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -50,8 +79,6 @@ function App() {
           <Route path="/devices" element={<Devices />} />
           <Route path="/applications" element={<Applications />} />
           <Route path="/cloner" element={<Cloner />} />
-
-          {/* Catch-all route within MainLayout */}
           <Route path="*" element={<Navigate to="/overview" replace />} />
         </Routes>
       </MainLayout>
@@ -60,3 +87,4 @@ function App() {
 }
 
 export default App;
+
