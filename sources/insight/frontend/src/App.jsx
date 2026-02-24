@@ -3,19 +3,27 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import MainLayout from './layouts/MainLayout';
 import Login from './pages/Login';
 import Overview from './pages/Dashboard/Overview';
-import { Health, Alerts, Clients, Networks, Devices, Applications } from './pages/Dashboard/Placeholders';
+import Health from './pages/Dashboard/Health';
+import Devices from './pages/Dashboard/Devices';
+import Alerts from './pages/Dashboard/Alerts';
+import Clients from './pages/Dashboard/Clients';
+import Networks from './pages/Dashboard/Networks';
+import Applications from './pages/Dashboard/Applications';
 import Cloner from './pages/Cloner';
+import { SiteProvider } from './context/SiteContext';
 import './App.css';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isReady, setIsReady] = useState(false); // New state to prevent early rendering
 
   useEffect(() => {
     const verifySession = async () => {
       const storedToken = sessionStorage.getItem('token');
       if (!storedToken) {
         setCheckingAuth(false);
+        setIsReady(true);
         return;
       }
       try {
@@ -31,6 +39,7 @@ function App() {
         sessionStorage.removeItem('token');
       } finally {
         setCheckingAuth(false);
+        setIsReady(true);
       }
     };
 
@@ -39,6 +48,8 @@ function App() {
     const handleUnauthorized = () => {
       setIsLoggedIn(false);
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('selectedSiteId');
+      window.location.href = '/'; // Hard reset
     };
 
     window.addEventListener('unauthorized', handleUnauthorized);
@@ -46,15 +57,27 @@ function App() {
   }, []);
 
   const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
+    // Add a slightly longer delay after the Login component's own delay 
+    // to ensure React context is strictly sequential
+    setTimeout(() => {
+      setIsLoggedIn(true);
+    }, 500);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const { default: apiClient } = await import('./api/apiClient');
+      await apiClient.post('/cloner/logout');
+    } catch (e) {
+      console.warn('Backend logout failed', e);
+    }
     setIsLoggedIn(false);
     sessionStorage.removeItem('token');
+    sessionStorage.removeItem('selectedSiteId');
+    window.location.href = '/';
   };
 
-  if (checkingAuth) {
+  if (checkingAuth || !isReady) {
     return (
       <div className="min-h-screen bg-[#020617] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -68,20 +91,22 @@ function App() {
 
   return (
     <Router>
-      <MainLayout onLogout={handleLogout}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/overview" replace />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/health" element={<Health />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/networks" element={<Networks />} />
-          <Route path="/devices" element={<Devices />} />
-          <Route path="/applications" element={<Applications />} />
-          <Route path="/cloner" element={<Cloner />} />
-          <Route path="*" element={<Navigate to="/overview" replace />} />
-        </Routes>
-      </MainLayout>
+      <SiteProvider>
+        <MainLayout onLogout={handleLogout}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/overview" replace />} />
+            <Route path="/overview" element={<Overview />} />
+            <Route path="/health" element={<Health />} />
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/clients" element={<Clients />} />
+            <Route path="/networks" element={<Networks />} />
+            <Route path="/devices" element={<Devices />} />
+            <Route path="/applications" element={<Applications />} />
+            <Route path="/cloner" element={<Cloner />} />
+            <Route path="*" element={<Navigate to="/overview" replace />} />
+          </Routes>
+        </MainLayout>
+      </SiteProvider>
     </Router>
   );
 }

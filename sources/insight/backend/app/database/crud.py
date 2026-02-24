@@ -369,6 +369,18 @@ async def get_all_auth_sessions() -> List[dict]:
     return sessions
 
 
+async def delete_all_auth_sessions():
+    """Clear all stored authentication sessions."""
+    db = get_database()
+    await db.auth_sessions.delete_many({})
+
+
+async def delete_auth_session(token_type: str):
+    """Delete a specific auth session by type."""
+    db = get_database()
+    await db.auth_sessions.delete_many({"token_type": token_type})
+
+
 # ===== AUTH BLUEPRINT CRUD =====
 
 async def upsert_blueprint(blueprint_data: dict) -> str:

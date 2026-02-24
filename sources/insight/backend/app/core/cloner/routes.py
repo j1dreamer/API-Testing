@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Response
 from typing import List, Dict, Any
 from app.core.cloner_service import (
     get_captured_sites, 
@@ -28,11 +28,14 @@ async def list_target_sites():
     return await get_live_account_sites()
 
 @router.get("/auth-session")
-async def cloner_auth_session():
+async def cloner_auth_session(response: Response):
     """Check if we have an active session for the cloner."""
+    # Ensure browse doesn't cache this auth check
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    
     from app.core import replay_service
     if replay_service.ACTIVE_TOKEN:
-        # Return a structure that checkAuth expects (token_value or similar)
         return {
             "token_value": replay_service.ACTIVE_TOKEN.get("access_token"),
             "expires_in": replay_service.ACTIVE_TOKEN.get("expires_in")
@@ -46,10 +49,20 @@ async def cloner_login(
 ):
     """Trigger a portal login to refresh the ACTIVE_TOKEN."""
     try:
+        from app.core.replay_service import replay_login
         token = await replay_login(username, password)
         return {"status": "success", "token_type": "Bearer", "expires_in": token.get("expires_in")}
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
+
+@router.post("/logout")
+async def cloner_logout():
+    """Clear the active cloner session (memory and DB)."""
+    from app.core import replay_service
+    from app.database.crud import delete_all_auth_sessions
+    replay_service.ACTIVE_TOKEN = None
+    await delete_all_auth_sessions()
+    return {"status": "success"}
 
 @router.post("/preview")
 async def preview_clone(

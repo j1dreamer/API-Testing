@@ -2,7 +2,7 @@ import httpx
 import json
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
-from app.database.crud import get_all_auth_sessions
+from app.database.crud import get_all_auth_sessions, delete_all_auth_sessions
 from app.config import MONGODB_URL # Not used directly but ensured config loaded
 
 # Constants
@@ -120,6 +120,13 @@ class ArubaService:
                 json=json_data
             )
             
+            # If we get unauthorized, clear the DB sessions so we don't keep trying dead tokens
+            if resp.status_code in [401, 403]:
+                print(f"[ARUBA SERVICE] Received {resp.status_code}. Clearing stored auth sessions.")
+                await delete_all_auth_sessions()
+                from app.core import replay_service
+                replay_service.ACTIVE_TOKEN = None
+
             # Update session cookies from response
             if resp.cookies:
                 for cookie in resp.cookies.jar:

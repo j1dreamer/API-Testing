@@ -1,0 +1,72 @@
+[
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "Test Captive",
+    "id": "603c9f31-2614-4bf5-ac81-4734941e5791",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "Demo-Captive",
+    "id": "a041b9b4-5b76-44f8-8301-fa5ff687b657",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "AITC_Guest_External",
+    "id": "a6fc0929-2a45-4143-89c2-bb821780c705",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "CaptivePortal-Test",
+    "id": "7260d41b-f540-43cf-bab7-637c83ff841b",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "Guest portal",
+    "id": "cc5cc662-9363-4a08-8139-930bcae3485a",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "networkLimitedAvailability",
+    "name": "test wired",
+    "id": "7d76437f-67d1-4850-99f3-77905832299b",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": null,
+    "sourceType": "networks"
+  },
+  {
+    "condition": "offline",
+    "name": "AP-Test",
+    "id": "ec:fc:c6:cb:19:e8",
+    "stackId": null,
+    "severity": "poor",
+    "conditionSeverity": "major",
+    "alertId": "3b8cfa6f-49e8-4d05-9436-b1e589c57125",
+    "sourceType": "devices"
+  }
+]

@@ -34,7 +34,13 @@ const Login = ({ onLoginSuccess }) => {
         try {
             const res = await apiClient.post('/cloner/login', { username, password });
             sessionStorage.setItem('token', res.data?.token_value || 'aruba_session');
-            onLoginSuccess();
+
+            // Add a small delay to ensure backend session is fully established 
+            // and frontend state doesn't trigger requests too fast
+            setTimeout(() => {
+                onLoginSuccess();
+            }, 1500);
+
         } catch (err) {
             setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
         } finally {

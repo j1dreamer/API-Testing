@@ -9,7 +9,8 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
     """Fetch all live sites for the currently logged-in account (active session)."""
     if not replay_service.ACTIVE_TOKEN:
         print("[CLONER] No active token found in replay_service")
-        return []
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session. Please login.")
     
     headers = {
         "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
@@ -17,12 +18,24 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
         "X-ION-API-VERSION": "22",
         "X-ION-CLIENT-TYPE": "InstantOn",
         "X-ION-CLIENT-PLATFORM": "web",
-        "Referer": "https://portal.instant-on.hpe.com/sites/list"
+        "Origin": "https://portal.instant-on.hpe.com",
+        "Referer": "https://portal.instant-on.hpe.com/sites/list",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin"
     }
     
     async with httpx.AsyncClient(verify=False) as client:
         try:
             res = await client.get("https://portal.instant-on.hpe.com/api/sites", headers=headers, timeout=10.0)
+            if res.status_code in [401, 403]:
+                print(f"[CLONER] Live sites fetch received {res.status_code}, clearing backend session and forcing 401")
+                replay_service.ACTIVE_TOKEN = None
+                from app.database.crud import delete_all_auth_sessions
+                await delete_all_auth_sessions()
+                from fastapi import HTTPException
+                raise HTTPException(status_code=401, detail="Session expired or invalid.")
+                
             if res.status_code == 200:
                 data = res.json()
                 raw_elements = data if isinstance(data, list) else data.get("elements", [])
@@ -36,13 +49,18 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
                     })
                 return standard_sites
         except Exception as e:
+            from fastapi import HTTPException
             print(f"[CLONER] Failed to fetch live sites: {e}")
+            if isinstance(e, HTTPException):
+                raise e
     return []
 
 async def fetch_site_config_live(site_id: str) -> Dict[str, Any]:
     """Fetch live wired/wireless configuration for a site using the active session."""
+    from app.core import replay_service
     if not replay_service.ACTIVE_TOKEN:
-        return {"error": "No active session for live config fetch."}
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session for live config fetch.")
     
     headers = {
         "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
@@ -59,6 +77,14 @@ async def fetch_site_config_live(site_id: str) -> Dict[str, Any]:
             url_nets = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
             res_nets = await client.get(url_nets, headers=headers, timeout=10.0)
             
+            if res_nets.status_code in [401, 403]:
+                print(f"[CLONER] Live config fetch received {res_nets.status_code}, clearing backend session")
+                replay_service.ACTIVE_TOKEN = None
+                from app.database.crud import delete_all_auth_sessions
+                await delete_all_auth_sessions()
+                from fastapi import HTTPException
+                raise HTTPException(status_code=401, detail="Session expired or invalid.")
+                
             # Fetch guest portal settings (site-level)
             url_guest = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/guestPortalSettings"
             res_guest = await client.get(url_guest, headers=headers, timeout=10.0)

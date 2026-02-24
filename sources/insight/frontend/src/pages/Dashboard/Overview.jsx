@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Bell, Users, Wifi, Monitor, Box, AlertCircle, ArrowRight } from 'lucide-react';
 import apiClient from '../../api/apiClient';
+import { useSite } from '../../context/SiteContext';
 
 const Overview = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Site selection state
-    const [sites, setSites] = useState([]);
-    const [selectedSiteId, setSelectedSiteId] = useState('');
+    const {
+        selectedSiteId,
+        setSelectedSiteId,
+        sites,
+        fetchSites
+    } = useSite();
 
     useEffect(() => {
-        fetchSites();
+        if (sites.length === 0) {
+            fetchSites();
+        }
     }, []);
 
     // Fetch dashboard when a new site is selected
@@ -21,25 +27,6 @@ const Overview = () => {
             fetchDashboardData(selectedSiteId);
         }
     }, [selectedSiteId]);
-
-    const fetchSites = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            const sitesRes = await apiClient.get('/cloner/live-sites');
-            const fetchedSites = Array.isArray(sitesRes.data) ? sitesRes.data : [];
-            if (fetchedSites.length === 0) {
-                throw new Error("No sites found. Ensure the backend has a valid session.");
-            }
-            setSites(fetchedSites);
-            // Default to the first site
-            setSelectedSiteId(fetchedSites[0].siteId || fetchedSites[0]._id || fetchedSites[0].id);
-        } catch (err) {
-            console.error("Sites fetch error:", err);
-            setError(err.response?.data?.detail || "Failed to fetch sites list.");
-            setLoading(false);
-        }
-    };
 
     const fetchDashboardData = async (siteId) => {
         setLoading(true);

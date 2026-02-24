@@ -394,6 +394,13 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
                 follow_redirects=True
             )
             
+            # If backend receives 401 from Aruba, clear the local active token session
+            if response.status_code in [401, 403]:
+                print(f"[REPLAY PROXY] Received {response.status_code} from Aruba. Invalidating local session.")
+                ACTIVE_TOKEN = None
+                from app.database.crud import delete_all_auth_sessions
+                await delete_all_auth_sessions()
+            
             # Prepare response headers (filter out sensitive ones)
             skip_resp_headers = {
                 "transfer-encoding", "connection", "content-encoding", 
