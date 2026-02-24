@@ -70,65 +70,6 @@ async def proxy_request(path: str, request: Request):
             media_type="application/json",
         )
 
-# --- Toolkit Proxy (Forwarding to Port 8001) ---
-TOOLKIT_BASE_URL = "http://localhost:8001"
+# --- Toolkit Proxy (MOVED TO LOCAL) ---
+# Routes are now handled directly by cloner_router in main.py
 
-@router.api_route(
-    "/api/cloner/{path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-)
-async def proxy_cloner(path: str, request: Request):
-    """Forward /api/cloner/* to Toolkit Backend (8001)."""
-    return await _forward_to_toolkit(f"/api/cloner/{path}", request)
-
-@router.api_route(
-    "/api/logs/{path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-)
-async def proxy_logs(path: str, request: Request):
-    """Forward /api/logs/* to Toolkit Backend (8001)."""
-    return await _forward_to_toolkit(f"/api/logs/{path}", request)
-
-async def _forward_to_toolkit(target_path: str, request: Request):
-    url = f"{TOOLKIT_BASE_URL}{target_path}"
-    
-    # Exclude headers that confuse the forwarding
-    # We DO want to forward Auth/Content headers usually, but the Toolkit might not need X-Internal-App-Auth
-    # The Toolkit might expect its own headers? 
-    # Actually, the Frontend sends headers. We just pass them along.
-    
-    forward_headers = {}
-    skip_headers = {"host", "content-length", "connection"}
-    for key, value in request.headers.items():
-        if key.lower() not in skip_headers:
-            forward_headers[key] = value
-
-    try:
-        async with httpx.AsyncClient() as client:
-            body = await request.body()
-            resp = await client.request(
-                method=request.method,
-                url=url,
-                content=body,
-                headers=forward_headers,
-                params=request.query_params,
-                timeout=30.0
-            )
-            
-            # Prepare response headers
-            resp_headers = {}
-            for key, value in resp.headers.items():
-                if key.lower() not in skip_headers and key.lower() != "content-encoding":
-                     resp_headers[key] = value
-            
-            return Response(
-                content=resp.content,
-                status_code=resp.status_code,
-                headers=resp_headers,
-                media_type=resp.headers.get("content-type")
-            )
-    except Exception as e:
-        return JSONResponse(
-            status_code=502,
-            content={"error": f"Toolkit Proxy Error: {str(e)}"}
-        )

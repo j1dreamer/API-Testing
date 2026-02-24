@@ -1,0 +1,29 @@
+
+> frontend@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 1779 modules transformed.
+[31m✗[39m Build failed in 1.63s
+[31merror during build:
+[31msrc/components/Sidebar/index.jsx (3:44): "Desktop" is not exported by "node_modules/lucide-react/dist/esm/lucide-react.js", imported by "src/components/Sidebar/index.jsx".[31m
+file: [36mD:/AITC/API-Testing/sources/insight/frontend/src/components/Sidebar/index.jsx:3:44[31m
+[33m
+1: import React from 'react';
+2: import { NavLink } from 'react-router-dom';
+3: import { Home, Activity, Bell, Users, Wifi, Desktop, Box, Copy, LogOut } from 'lucide-react';
+                                               ^
+4: 
+5: const Sidebar = ({ onLogout }) => {
+[31m
+    at getRollupError (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at Module.error (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+    at Module.traceVariable (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:17452:29)
+    at ModuleScope.findVariable (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:15070:39)
+    at ReturnValueScope.findVariable (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at FunctionBodyScope.findVariable (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at Identifier.bind (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:5447:40)
+    at CallExpression.bind (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///D:/AITC/API-Testing/sources/insight/frontend/node_modules/rollup/dist/es/shared/node-entry.js:12179:15)[39m

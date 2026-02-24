@@ -1,37 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../api/apiClient';
+import apiClient from '../../api/apiClient';
+import styles from './Cloner.module.css';
 import {
-    ShieldCheck,
-    Rocket,
-    Download,
-    Key,
-    LayoutDashboard,
-    CheckSquare,
-    FileJson,
-    AlertTriangle,
-    ArrowRight,
-    Server,
-    Globe,
-    Zap,
-    Wifi,
-    Cable,
-    Users,
-    CheckCircle,
-    Activity,
-    Code,
-    Network
+    ShieldCheck, Rocket, Download, Key, LayoutDashboard, CheckSquare, FileJson,
+    ArrowRight, Server, Globe, Zap, Wifi, Cable, Users, CheckCircle, Activity, Code, Network
 } from 'lucide-react';
 
 const Cloner = () => {
-    const navigate = useNavigate();
-
     // --- 1. Quản lý State (Logic gốc) ---
     const [authStatus, setAuthStatus] = useState({ linked: false, checking: true });
     const [loginForm, setLoginForm] = useState({ username: '', password: '', loading: false, error: '' });
     const [showLoginPanel, setShowLoginPanel] = useState(false);
 
-    const [sourceMode, setSourceMode] = useState('captured'); // 'captured' | 'live'
+    const [sourceMode, setSourceMode] = useState('captured');
     const [sourceSites, setSourceSites] = useState([]);
     const [selectedSourceId, setSelectedSourceId] = useState('');
     const [fetchLoading, setFetchLoading] = useState(false);
@@ -71,7 +53,7 @@ const Cloner = () => {
     // --- 3. Các hàm Logic xử lý API ---
     const checkAuthStatus = async () => {
         try {
-            const res = await apiClient.get('/api/cloner/auth-session');
+            const res = await apiClient.get('/cloner/auth-session');
             const isLinked = !!res.data.token_value;
             setAuthStatus({ linked: isLinked, checking: false });
             if (isLinked) {
@@ -89,21 +71,21 @@ const Cloner = () => {
         e.preventDefault();
         setLoginForm(prev => ({ ...prev, loading: true, error: '' }));
         try {
-            await apiClient.post('/api/cloner/login', {
+            await apiClient.post('/cloner/login', {
                 username: loginForm.username,
                 password: loginForm.password
             });
             setLoginForm(prev => ({ ...prev, loading: false }));
             checkAuthStatus();
         } catch (error) {
-            const msg = error.response?.data?.detail || "Đăng nhập thất bại. Kiểm tra lại thông tin.";
+            const msg = error.response?.data?.detail || "Đăng nhập thất bại.";
             setLoginForm(prev => ({ ...prev, loading: false, error: msg }));
         }
     };
 
     const loadSourceSites = async (mode) => {
         try {
-            const endpoint = mode === 'live' ? '/api/cloner/live-sites' : '/api/cloner/sites';
+            const endpoint = mode === 'live' ? '/cloner/live-sites' : '/cloner/sites';
             const res = await apiClient.get(endpoint);
             setSourceSites(res.data || []);
         } catch (error) {
@@ -113,7 +95,7 @@ const Cloner = () => {
 
     const loadTargetSites = async () => {
         try {
-            const res = await apiClient.get('/api/cloner/target-sites');
+            const res = await apiClient.get('/cloner/target-sites');
             setTargetSites(res.data || []);
         } catch (error) {
             console.error("Failed to load target sites:", error);
@@ -125,7 +107,7 @@ const Cloner = () => {
         setFetchLoading(true);
         setFetchError('');
         try {
-            const res = await apiClient.post('/api/cloner/preview', {
+            const res = await apiClient.post('/cloner/preview', {
                 site_id: selectedSourceId,
                 source: sourceMode
             });
@@ -143,11 +125,11 @@ const Cloner = () => {
     const handleExecuteClone = async () => {
         if (selectedTargetIds.size === 0) return alert("Vui lòng chọn ít nhất 1 Site đích.");
         const opsToRun = previewOps.filter((_, i) => selectedOpsIndices.has(i));
-        if (!confirm(`Xác nhận áp dụng ${opsToRun.length} lệnh lên ${selectedTargetIds.size} Site?`)) return;
+        if (!confirm(`Xác nhận áp dụng ${opsToRun.length} lệnh?`)) return;
 
         setExecutionLoading(true);
         try {
-            const res = await apiClient.post('/api/cloner/apply', {
+            const res = await apiClient.post('/cloner/apply', {
                 target_site_ids: Array.from(selectedTargetIds),
                 operations: opsToRun
             });
@@ -173,51 +155,18 @@ const Cloner = () => {
         return <Activity size={16} className="text-slate-400" />;
     };
 
-    // --- 4. Giao diện (Premium UI) ---
+    // --- 4. Giao diện ---
     return (
-        <div className="min-h-screen bg-[#020617] text-slate-200 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+        <div className={`relative w-full min-h-[800px] h-full bg-[#020617] text-slate-200 font-sans overflow-x-hidden rounded-xl border border-gray-800 shadow-2xl ${styles.clonerWrapper}`}>
             {/* Background Orbs */}
-            <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10">
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none rounded-xl">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full"></div>
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
             </div>
 
-            {/* Header */}
-            <header className="border-b border-white/5 bg-[#020617]/40 backdrop-blur-xl sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
-                    <div className="flex items-center gap-5">
-                        <div className="relative group">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                            <div className="relative w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center border border-white/10 shadow-2xl">
-                                <Zap className="text-blue-400" size={24} fill="currentColor" />
-                            </div>
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">
-                                Instant <span className="text-blue-500">Insight</span>
-                            </h1>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`w-2 h-2 rounded-full ${authStatus.linked ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]'}`}></span>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                                    {authStatus.linked ? 'Portal Connected' : 'Portal Offline'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="group relative px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-full text-xs font-bold uppercase tracking-widest transition-all border border-white/10 flex items-center gap-3 overflow-hidden"
-                    >
-                        <LayoutDashboard size={14} className="group-hover:rotate-12 transition-transform" />
-                        <span>Return to Hub</span>
-                    </button>
-                </div>
-            </header>
-
-            <main className="max-w-6xl mx-auto p-12 space-y-16">
-
-                {/* Horizontal Progress Stepper (Sticky) */}
-                <div className="sticky top-24 z-40 bg-[#020617]/80 backdrop-blur-xl py-6 border-b border-white/5 -mx-12 px-12 mb-10 transition-all duration-300">
+            <div className="relative z-10 w-full h-full p-8 space-y-12">
+                {/* Horizontal Progress Stepper */}
+                <div className="bg-[#020617]/80 backdrop-blur-xl py-6 border-b border-white/5 -mx-8 px-12 mb-10 transition-all duration-300">
                     <div className="max-w-4xl mx-auto relative px-4">
                         <div className="flex justify-between items-center relative z-10">
                             {['Auth', 'Source', 'Review', 'Execute'].map((step, idx) => {
@@ -227,7 +176,7 @@ const Cloner = () => {
                                 return (
                                     <div key={idx} className="flex flex-col items-center">
                                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 border ${isCurrent ? 'bg-blue-600 border-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-110 text-white' :
-                                                isActive ? 'bg-slate-900 border-blue-500/50 text-blue-400' : 'bg-slate-950 border-white/5 text-slate-700'
+                                            isActive ? 'bg-slate-900 border-blue-500/50 text-blue-400' : 'bg-slate-950 border-white/5 text-slate-700'
                                             }`}>
                                             {isActive && !isCurrent ? <CheckCircle size={20} /> :
                                                 idx === 0 ? <Key size={20} /> : idx === 1 ? <Server size={20} /> :
@@ -249,11 +198,10 @@ const Cloner = () => {
                 </div>
 
                 {/* Workflow Cards */}
-                <div className="grid grid-cols-1 gap-12">
-
+                <div className="grid grid-cols-1 gap-12 max-w-6xl mx-auto">
                     {/* Step 1: Authentication */}
                     <section className={`relative group transition-all duration-700 ${currentStep > 1 ? 'opacity-40 blur-[1px] scale-[0.98]' : 'scale-100'}`}>
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-700"></div>
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-700 pointer-events-none"></div>
                         <div className="relative backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-10 shadow-2xl">
                             <div className="flex items-center gap-4 mb-10">
                                 <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 border border-blue-500/20">
@@ -261,7 +209,7 @@ const Cloner = () => {
                                 </div>
                                 <div>
                                     <h2 className="text-xl font-bold text-white tracking-tight">Portal Authentication</h2>
-                                    <p className="text-sm text-slate-500">Establish a secure link to Aruba Instant On Cloud</p>
+                                    <p className="text-sm text-slate-500">Establish a secure link to apply clones</p>
                                 </div>
                             </div>
 
@@ -272,17 +220,15 @@ const Cloner = () => {
                                         <input
                                             type="text"
                                             className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                            placeholder="admin@portal.com"
                                             value={loginForm.username}
                                             onChange={e => setLoginForm({ ...loginForm, username: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Master Password</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Password</label>
                                         <input
                                             type="password"
                                             className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                            placeholder="••••••••"
                                             value={loginForm.password}
                                             onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
                                         />
@@ -377,7 +323,7 @@ const Cloner = () => {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-fade-in pb-20">
 
                             {/* Operation Preview List */}
-                            <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-8 flex flex-col h-[550px]">
+                            <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-8 flex flex-col max-h-[550px]">
                                 <div className="flex justify-between items-center mb-8">
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
                                         <Activity size={16} className="text-blue-500" /> Blueprint Elements
@@ -411,7 +357,7 @@ const Cloner = () => {
                             </div>
 
                             {/* Target Selection & Action */}
-                            <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-8 flex flex-col h-[550px]">
+                            <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-8 flex flex-col max-h-[550px]">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8 flex items-center gap-2">
                                     <Network size={16} className="text-emerald-500" /> Target Deployment
                                 </h3>
@@ -448,13 +394,12 @@ const Cloner = () => {
                             </div>
                         </div>
                     )}
-
                 </div>
-            </main>
+            </div>
 
             {/* Modal: JSON Inspector */}
             {modalData && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/90 backdrop-blur-md animate-fade-in">
+                <div className="absolute inset-0 z-[100] flex items-center justify-center p-8 bg-black/90 backdrop-blur-md animate-fade-in rounded-xl">
                     <div className="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col scale-in-center">
                         <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
                             <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-2"><Code size={16} /> Payload Inspector</span>
