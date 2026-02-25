@@ -21,32 +21,56 @@ OpenAPI 3.0 Swagger UI (localhost:8000/)
 
 ### 1. Prerequisites
 - Python 3.10+
+- Node.js 18+ & npm
 - MongoDB running on `localhost:27017`
 - Google Chrome
 
 ### 2. Backend Setup
 ```bash
-cd f:\API-Testing
-python -m venv venv
-.\venv\Scripts\activate
+# Navigate to the backend directory
+cd sources/insight/backend
+
+# Create and activate virtual environment
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/Mac:
+# source .venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Start Server
+# Setup environment variables
+cp .env.example .env
+
+# Start Server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+```
+*(The backend will run on `http://localhost:8001` and provide the Swagger documentation at `/docs`)*
+
+### 3. Frontend Setup
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# Open a new terminal and navigate to the frontend directory
+cd sources/insight/frontend
+
+# Install Node dependencies
+npm install
+
+# Setup environment variables
+cp .env.example .env
+
+# Start the Vite development server
+npm run dev
 ```
 
-### 4. Load Extension
+### 4. Load Chrome Extension (Optional, for capturing)
 1. Open Chrome → `chrome://extensions`
 2. Enable **Developer mode**
-3. Click **Load unpacked** → select `f:\API-Testing\extension`
+3. Click **Load unpacked** → select the `extension` folder (if available)
 
-### 5. Capture
-1. Click the extension icon → **Start Capture**
-2. Navigate to `portal.arubainstanton.com` and log in
-3. Browse around — APIs are captured automatically
-4. Open `http://localhost:8000/` to see the auto-generated Swagger docs
+### 5. Usage
+1. Open the frontend React app (usually `http://localhost:5173`) in your browser to view the Insight Dashboard.
+2. If using the extension: Click the extension icon → **Start Capture**, navigate to `portal.instant-on.hpe.com` and log in. Captures will be routed to the backend and visible on the dashboard.
 
 ## Features
 
