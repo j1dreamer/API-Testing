@@ -4,12 +4,12 @@ import apiClient from '../../api/apiClient';
 import styles from './Cloner.module.css';
 import {
     ShieldCheck, Rocket, Download, Key, LayoutDashboard, CheckSquare, FileJson,
-    ArrowRight, Server, Globe, Zap, Wifi, Cable, Users, CheckCircle, Activity, Code, Network
+    ArrowRight, Server, Globe, Zap, Wifi, Cable, Users, CheckCircle, Activity, Code, Network, Search
 } from 'lucide-react';
 
 const Cloner = () => {
     // --- 1. Quản lý State ---
-    const [sourceMode, setSourceMode] = useState('captured');
+    const [sourceMode, setSourceMode] = useState('live');
     const [sourceSites, setSourceSites] = useState([]);
     const [selectedSourceId, setSelectedSourceId] = useState('');
     const [fetchLoading, setFetchLoading] = useState(false);
@@ -21,6 +21,7 @@ const Cloner = () => {
 
     const [targetSites, setTargetSites] = useState([]);
     const [selectedTargetIds, setSelectedTargetIds] = useState(new Set());
+    const [searchTargetTerm, setSearchTargetTerm] = useState('');
     const [executionLoading, setExecutionLoading] = useState(false);
     const [executionResult, setExecutionResult] = useState(null);
 
@@ -77,7 +78,7 @@ const Cloner = () => {
             });
             const ops = Array.isArray(res.data?.operations) ? res.data.operations : [];
             setPreviewOps(ops);
-            setSelectedOpsIndices(new Set(ops.map((_, i) => i)));
+            setSelectedOpsIndices(new Set());
             setShowPreview(true);
         } catch (error) {
             setFetchError(error.response?.data?.detail || "Lỗi khi lấy cấu hình.");
@@ -176,53 +177,28 @@ const Cloner = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                                <div className="lg:col-span-4 flex flex-col gap-4">
-                                    <button
-                                        onClick={() => setSourceMode('captured')}
-                                        className={`p-6 rounded-2xl border transition-all text-left flex items-center gap-4 ${sourceMode === 'captured' ? 'bg-indigo-600 border-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.3)] text-white' : 'bg-black/20 border-white/5 text-slate-500 hover:border-white/10'}`}
+                            <div className="max-w-2xl mx-auto flex flex-col gap-6">
+                                <div className="relative">
+                                    <select
+                                        value={selectedSourceId}
+                                        onChange={e => setSelectedSourceId(e.target.value)}
+                                        className="w-full h-16 bg-black/40 border border-white/5 rounded-2xl px-6 text-white text-lg font-bold appearance-none focus:outline-none focus:border-blue-500/50"
                                     >
-                                        <FileJson size={24} />
-                                        <div className="flex flex-col">
-                                            <span className="font-bold uppercase tracking-widest text-xs">Captured Logs</span>
-                                            <span className="text-[10px] opacity-60 font-medium italic">Local Archive</span>
-                                        </div>
-                                    </button>
-                                    <button
-                                        onClick={() => setSourceMode('live')}
-                                        className={`p-6 rounded-2xl border transition-all text-left flex items-center gap-4 ${sourceMode === 'live' ? 'bg-blue-600 border-blue-400 shadow-[0_0_20px_rgba(37,99,235,0.3)] text-white' : 'bg-black/20 border-white/5 text-slate-500 hover:border-white/10'}`}
-                                    >
-                                        <Globe size={24} />
-                                        <div className="flex flex-col">
-                                            <span className="font-bold uppercase tracking-widest text-xs">Live Cloud</span>
-                                            <span className="text-[10px] opacity-60 font-medium italic">Direct API Fetch</span>
-                                        </div>
-                                    </button>
+                                        <option value="">-- Choose Origin Site --</option>
+                                        {sourceSites.map(site => (
+                                            <option key={site.siteId} value={site.siteId} className="bg-slate-900">{site.siteName}</option>
+                                        ))}
+                                    </select>
+                                    <ArrowRight className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 rotate-90" size={20} />
                                 </div>
-
-                                <div className="lg:col-span-8 flex flex-col gap-6">
-                                    <div className="relative">
-                                        <select
-                                            value={selectedSourceId}
-                                            onChange={e => setSelectedSourceId(e.target.value)}
-                                            className="w-full h-16 bg-black/40 border border-white/5 rounded-2xl px-6 text-white text-lg font-bold appearance-none focus:outline-none focus:border-blue-500/50"
-                                        >
-                                            <option value="">-- Choose Origin Site --</option>
-                                            {sourceSites.map(site => (
-                                                <option key={site.siteId} value={site.siteId} className="bg-slate-900">{site.siteName}</option>
-                                            ))}
-                                        </select>
-                                        <ArrowRight className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 rotate-90" size={20} />
-                                    </div>
-                                    <button
-                                        onClick={handleFetchConfig}
-                                        disabled={!selectedSourceId || fetchLoading}
-                                        className="h-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-30"
-                                    >
-                                        {fetchLoading ? 'Decoding Topology...' : 'Inspect Site Configuration'}
-                                    </button>
-                                    {fetchError && <p className="text-rose-500 text-xs font-bold text-center italic">{fetchError}</p>}
-                                </div>
+                                <button
+                                    onClick={handleFetchConfig}
+                                    disabled={!selectedSourceId || fetchLoading}
+                                    className="h-16 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-30"
+                                >
+                                    {fetchLoading ? 'Decoding Topology...' : 'Inspect Site Configuration'}
+                                </button>
+                                {fetchError && <p className="text-rose-500 text-xs font-bold text-center italic">{fetchError}</p>}
                             </div>
                         </div>
                     </section>
@@ -237,7 +213,21 @@ const Cloner = () => {
                                     <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
                                         <Activity size={16} className="text-blue-500" /> Blueprint Elements
                                     </h3>
-                                    <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-md text-[10px] font-black border border-blue-500/20">{previewOps.length} DETECTED</span>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => {
+                                                if (selectedOpsIndices.size === previewOps.length) {
+                                                    setSelectedOpsIndices(new Set());
+                                                } else {
+                                                    setSelectedOpsIndices(new Set(previewOps.map((_, i) => i)));
+                                                }
+                                            }}
+                                            className="px-3 py-1 bg-white/5 hover:bg-white/10 text-white rounded-md text-[10px] font-black uppercase tracking-widest transition-colors border border-white/10"
+                                        >
+                                            {selectedOpsIndices.size === previewOps.length && previewOps.length > 0 ? 'Deselect All' : 'Select All'}
+                                        </button>
+                                        <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-md text-[10px] font-black border border-blue-500/20">{previewOps.length} DETECTED</span>
+                                    </div>
                                 </div>
                                 <div className="flex-1 overflow-y-auto pr-3 space-y-3 custom-scrollbar">
                                     {previewOps.map((op, idx) => (
@@ -254,7 +244,14 @@ const Cloner = () => {
                                                         {getOpIcon(op.type)}
                                                         <span className="text-sm font-bold text-white">{op.name}</span>
                                                     </div>
-                                                    <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">{op.type}</span>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[9px] font-mono text-slate-600 uppercase tracking-widest">{op.type}</span>
+                                                        {op.payload?._guest_portal_settings && (
+                                                            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[8px] font-bold border border-emerald-500/20 uppercase tracking-widest flex items-center gap-1">
+                                                                <FileJson size={8} /> + GUEST SETTINGS
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <button onClick={() => setModalData(op)} className="p-2 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-blue-400 transition-all">
@@ -267,21 +264,40 @@ const Cloner = () => {
 
                             {/* Target Selection & Action */}
                             <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-8 flex flex-col max-h-[550px]">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-8 flex items-center gap-2">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2">
                                     <Network size={16} className="text-emerald-500" /> Target Deployment
                                 </h3>
+
+                                {/* Search Bar for Targets */}
+                                <div className="relative mb-4 shrink-0">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search size={16} className="text-slate-500" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search destination site..."
+                                        value={searchTargetTerm}
+                                        onChange={(e) => setSearchTargetTerm(e.target.value)}
+                                        className="w-full text-sm bg-black/40 border border-white/5 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-600"
+                                    />
+                                </div>
+
                                 <div className="flex-1 overflow-y-auto pr-3 space-y-3 custom-scrollbar">
-                                    {targetSites.map(site => (
-                                        <label key={site.siteId} className={`p-5 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${selectedTargetIds.has(site.siteId) ? 'bg-emerald-600/10 border-emerald-500/50' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                    {targetSites.filter(site => site.siteName.toLowerCase().includes(searchTargetTerm.toLowerCase())).map(site => (
+                                        <label key={site.siteId} className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${selectedTargetIds.has(site.siteId) ? 'bg-emerald-600/10 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)] scale-[1.02]' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
                                             <div className="flex flex-col">
-                                                <span className={`text-sm font-bold ${selectedTargetIds.has(site.siteId) ? 'text-emerald-400' : 'text-slate-400'}`}>{site.siteName}</span>
-                                                <span className="text-[9px] font-mono text-slate-700">{site.siteId}</span>
+                                                <span className={`text-sm font-bold ${selectedTargetIds.has(site.siteId) ? 'text-emerald-400' : 'text-slate-300'}`}>{site.siteName}</span>
+                                                <span className="text-[9px] font-mono text-slate-600">{site.siteId}</span>
+                                            </div>
+                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${selectedTargetIds.has(site.siteId) ? 'border-emerald-500 bg-emerald-500/20' : 'border-slate-600 bg-black/50'}`}>
+                                                {selectedTargetIds.has(site.siteId) && <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>}
                                             </div>
                                             <input
-                                                type="checkbox"
+                                                type="radio"
+                                                name="targetSite"
                                                 checked={selectedTargetIds.has(site.siteId)}
-                                                onChange={() => setSelectedTargetIds(prev => toggleSetItem(prev, site.siteId))}
-                                                className="w-6 h-6 rounded-full border-white/10 bg-white/5 text-emerald-500 focus:ring-0"
+                                                onChange={() => setSelectedTargetIds(new Set([site.siteId]))}
+                                                className="hidden"
                                             />
                                         </label>
                                     ))}
@@ -304,26 +320,28 @@ const Cloner = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
 
             {/* Modal: JSON Inspector */}
-            {modalData && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center p-8 bg-black/90 backdrop-blur-md animate-fade-in rounded-xl">
-                    <div className="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col scale-in-center">
-                        <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-2"><Code size={16} /> Payload Inspector</span>
-                            <button onClick={() => setModalData(null)} className="text-xs font-bold text-slate-500 hover:text-white transition-colors">Close</button>
-                        </div>
-                        <div className="flex-1 p-8 bg-black/40 overflow-auto font-mono text-[11px] text-blue-300 leading-relaxed custom-scrollbar max-h-[65vh]">
-                            <pre>{JSON.stringify(modalData.payload, null, 2)}</pre>
-                        </div>
-                        <div className="p-6 bg-slate-900 border-t border-white/5 flex justify-end">
-                            <button onClick={() => setModalData(null)} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase rounded-lg transition-all">Done</button>
+            {
+                modalData && (
+                    <div className="absolute inset-0 z-[100] flex items-center justify-center p-8 bg-black/90 backdrop-blur-md animate-fade-in rounded-xl">
+                        <div className="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col scale-in-center">
+                            <div className="p-6 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 flex items-center gap-2"><Code size={16} /> Payload Inspector</span>
+                                <button onClick={() => setModalData(null)} className="text-xs font-bold text-slate-500 hover:text-white transition-colors">Close</button>
+                            </div>
+                            <div className="flex-1 p-8 bg-black/40 overflow-auto font-mono text-[11px] text-blue-300 leading-relaxed custom-scrollbar max-h-[65vh]">
+                                <pre>{JSON.stringify(modalData.payload, null, 2)}</pre>
+                            </div>
+                            <div className="p-6 bg-slate-900 border-t border-white/5 flex justify-end">
+                                <button onClick={() => setModalData(null)} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase rounded-lg transition-all">Done</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

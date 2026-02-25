@@ -48,6 +48,29 @@ body {
   background: #64748b;
 }
 
+/* Custom Scrollbar for local elements like Tables */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.5);
+  /* slate-800 with low opacity */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  /* slate-700 */
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+  /* slate-600 */
+}
+
 /* Animation Utilities */
 @keyframes fadeIn {
   from {
@@ -69,4 +92,53 @@ body {
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Table Utilities (Sticky, Resize) */
+.table-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background-color: rgba(30, 41, 59, 0.85);
+  /* slate-800 with high opacity for readability */
+}
+
+.table-col-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  /* Darken slightly to distinct from scrolling content */
+  background-color: #0f172a;
+}
+
+.table-header-sticky.table-col-sticky {
+  z-index: 30;
+  /* Intersection of top header and left col */
+}
+
+.resizable-col {
+  resize: horizontal;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Resize Handle Overlay Effect */
+.resizable-col::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.resizable-col:hover::after,
+.resizable-col:active::after {
+  background: rgba(99, 102, 241, 0.5);
+  /* indigo-500 glow */
 }

@@ -34,6 +34,7 @@ const Login = ({ onLoginSuccess }) => {
         try {
             const res = await apiClient.post('/cloner/login', { username, password });
             sessionStorage.setItem('token', res.data?.token_value || 'aruba_session');
+            sessionStorage.setItem('insight_user_email', username);
 
             // Add a small delay to ensure backend session is fully established 
             // and frontend state doesn't trigger requests too fast
@@ -66,13 +67,13 @@ const Login = ({ onLoginSuccess }) => {
 
             <div className="relative z-10 w-full max-w-md">
                 <div className="backdrop-blur-2xl bg-white/[0.03] border border-white/10 rounded-3xl p-10 shadow-2xl">
-                    <div className="flex items-center gap-4 mb-10">
+                    <div className="flex items-center gap-4 mb-8">
                         <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 border border-blue-500/20">
                             <ShieldCheck size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Portal Authentication</h2>
-                            <p className="text-sm text-slate-500">Establish a secure link to access insight</p>
+                            <h2 className="text-xl font-black italic uppercase text-white tracking-tight">INSIGHT</h2>
+                            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mt-1">Portal Access</p>
                         </div>
                     </div>
 
@@ -81,7 +82,7 @@ const Login = ({ onLoginSuccess }) => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email Address</label>
                             <input
                                 type="text"
-                                className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono"
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
                             />
@@ -90,24 +91,29 @@ const Login = ({ onLoginSuccess }) => {
                             <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Password</label>
                             <input
                                 type="password"
-                                className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                className="w-full h-14 bg-black/40 border border-white/5 rounded-xl px-5 text-white focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all font-mono"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                             />
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="h-14 mt-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-blue-400 hover:text-white transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center justify-center"
-                        >
-                            {loading ? (
-                                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></div>
-                            ) : null}
-                            {loading ? 'Verifying...' : 'Establish Link'}
-                        </button>
+                        <div className="pt-2">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 text-center mb-4">
+                                Powered by INSIGHT
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full h-14 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-xl shadow-blue-500/10 active:scale-95 disabled:opacity-50 flex items-center justify-center border border-transparent hover:border-blue-400/50"
+                            >
+                                {loading ? (
+                                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-current mr-3"></div>
+                                ) : null}
+                                {loading ? 'Verifying...' : 'Sign in'}
+                            </button>
+                        </div>
                     </form>
-                    {error && <p className="mt-4 text-rose-500 text-xs font-bold text-center">{error}</p>}
+                    {error && <p className="mt-6 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-xs font-bold text-center leading-relaxed">{error}</p>}
                 </div>
             </div>
         </div>

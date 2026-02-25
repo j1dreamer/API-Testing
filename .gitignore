@@ -1,0 +1,23 @@
+# Ignore all python experimental scripts at root
+/*.py
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Ignore random test directories at root
+/src/
+/tempo/
+
+# Keep docs and sources
+!/README.md
+!/requirements.txt
+!/Dockerfile
+
+# Standard ignores
+.DS_Store
+__pycache__/
+*.pyc
+.idea/
+.vscode/

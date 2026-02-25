@@ -11,6 +11,7 @@ import Networks from './pages/Dashboard/Networks';
 import Applications from './pages/Dashboard/Applications';
 import Cloner from './pages/Cloner';
 import { SiteProvider } from './context/SiteContext';
+import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
 
 function App() {
@@ -56,6 +57,28 @@ function App() {
     return () => window.removeEventListener('unauthorized', handleUnauthorized);
   }, []);
 
+  // Health Check Polling to keep browser tab active and check session
+  useEffect(() => {
+    let heartbeatInterval;
+    if (isLoggedIn) {
+      heartbeatInterval = setInterval(async () => {
+        try {
+          // Dynamic import to avoid breaking initial load
+          const { default: apiClient } = await import('./api/apiClient');
+          // Lightweight request to keep session and connection alive
+          await apiClient.get('/cloner/auth-session');
+          console.debug('Health Check Polling - isPaused: false, lastStatus: online');
+        } catch (e) {
+          console.warn('Health Check Polling - failed', e);
+        }
+      }, 30 * 1000); // 30 seconds
+    }
+
+    return () => {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+    };
+  }, [isLoggedIn]);
+
   const handleLoginSuccess = () => {
     // Add a slightly longer delay after the Login component's own delay 
     // to ensure React context is strictly sequential
@@ -91,22 +114,24 @@ function App() {
 
   return (
     <Router>
-      <SiteProvider>
-        <MainLayout onLogout={handleLogout}>
-          <Routes>
-            <Route path="/" element={<Navigate to="/overview" replace />} />
-            <Route path="/overview" element={<Overview />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/clients" element={<Clients />} />
-            <Route path="/networks" element={<Networks />} />
-            <Route path="/devices" element={<Devices />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/cloner" element={<Cloner />} />
-            <Route path="*" element={<Navigate to="/overview" replace />} />
-          </Routes>
-        </MainLayout>
-      </SiteProvider>
+      <SettingsProvider>
+        <SiteProvider>
+          <MainLayout onLogout={handleLogout}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/overview" element={<Overview />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/networks" element={<Networks />} />
+              <Route path="/devices" element={<Devices />} />
+              <Route path="/applications" element={<Applications />} />
+              <Route path="/cloner" element={<Cloner />} />
+              <Route path="*" element={<Navigate to="/overview" replace />} />
+            </Routes>
+          </MainLayout>
+        </SiteProvider>
+      </SettingsProvider>
     </Router>
   );
 }

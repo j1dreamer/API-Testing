@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Bell, Users, Wifi, Monitor, Box, AlertCircle, ArrowRight } from 'lucide-react';
 import apiClient from '../../api/apiClient';
 import { useSite } from '../../context/SiteContext';
+import useIntervalFetch from '../../hooks/useIntervalFetch';
+import { useSettings } from '../../context/SettingsContext';
+import SyncIndicator from '../../components/SyncIndicator';
+import ApplicationSummaryCard from './Applications/ApplicationSummaryCard';
 
 const Overview = () => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(null);
 
+    const { isAutoRefreshEnabled } = useSettings();
     const {
         selectedSiteId,
         setSelectedSiteId,
@@ -28,24 +35,29 @@ const Overview = () => {
         }
     }, [selectedSiteId]);
 
-    const fetchDashboardData = async (siteId) => {
-        setLoading(true);
+    const fetchDashboardData = async (siteId, silent = false) => {
+        if (!silent) setLoading(true);
+        else setIsRefreshing(true);
+
         setError('');
         try {
             const res = await apiClient.get(`/proxy/api/sites/${siteId}/dashboard`);
             setData(res.data);
+            setLastUpdated(new Date());
         } catch (err) {
             console.error("Dashboard fetch error:", err);
-            setError("Failed to fetch dashboard data. Check backend logs or session active status.");
+            if (!silent) setError("Failed to fetch dashboard data. Check backend logs or session active status.");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
+            else setIsRefreshing(false);
         }
     };
 
-    const handleRefresh = () => {
-        if (selectedSiteId) fetchDashboardData(selectedSiteId);
-        else fetchSites();
-    };
+    useIntervalFetch(() => {
+        if (selectedSiteId && !loading) {
+            fetchDashboardData(selectedSiteId, true);
+        }
+    }, isAutoRefreshEnabled ? 60000 : null, [selectedSiteId, loading, isAutoRefreshEnabled]);
 
     const healthScore = data?.healthOverview?.currentScore?.score ?? 'N/A';
     const activeAlerts = (data?.alertsOverview?.activeMajorAlertsCount || 0) + (data?.alertsOverview?.activeMinorAlertsCount || 0) + (data?.alertsOverview?.activeInfoAlertsCount || 0);
@@ -62,8 +74,7 @@ const Overview = () => {
         { key: 'alerts', label: 'Active Alerts', icon: <Bell className="text-rose-500" size={24} />, value: activeAlerts },
         { key: 'clients', label: 'Connected Clients', icon: <Users className="text-blue-500" size={24} />, value: connectedClients },
         { key: 'networks', label: 'Total Networks', icon: <Wifi className="text-indigo-500" size={24} />, value: activeNetworks },
-        { key: 'devices', label: 'Online Devices', icon: <Monitor className="text-purple-500" size={24} />, value: onlineDevices },
-        { key: 'applications', label: 'Tracked Apps', icon: <Box className="text-orange-500" size={24} />, value: 'N/A' }
+        { key: 'devices', label: 'Online Devices', icon: <Monitor className="text-purple-500" size={24} />, value: onlineDevices }
     ];
 
     return (
@@ -93,13 +104,7 @@ const Overview = () => {
                         <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 rotate-90 pointer-events-none" size={16} />
                     </div>
 
-                    <button
-                        onClick={handleRefresh}
-                        disabled={loading}
-                        className="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap"
-                    >
-                        {loading ? 'SYNCING...' : 'REFRESH'}
-                    </button>
+                    <SyncIndicator isSyncing={loading || isRefreshing} lastUpdated={lastUpdated} />
                 </div>
             </div>
 
@@ -110,9 +115,10 @@ const Overview = () => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cards.map(card => (
-                    <div key={card.key} className="bg-slate-900 rounded-2xl p-6 shadow-xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
+            {/* Row 1 & 2: 4 Thẻ đầu (2 thẻ / hàng) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {cards.slice(0, 4).map(card => (
+                    <div key={card.key} className="bg-slate-900 rounded-2xl p-6 shadow-xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors h-full flex flex-col justify-between">
                         <div className="absolute -right-6 -top-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
                             {card.icon}
                         </div>
@@ -123,15 +129,43 @@ const Overview = () => {
                             <h2 className="text-sm font-bold text-slate-400">{card.label}</h2>
                         </div>
                         <div className="mt-2 flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-white tracking-tighter">
+                            <span className="text-4xl font-black text-white tracking-tighter transition-all">
                                 {loading && !data ? '...' : card.value}
                             </span>
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* Row 3: Thẻ thứ 5 (1 thẻ / hàng) */}
+            <div className="grid grid-cols-1 gap-6 mb-6">
+                {cards.slice(4, 5).map(card => (
+                    <div key={card.key} className="bg-slate-900 rounded-2xl p-6 shadow-xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors h-full flex flex-col justify-between">
+                        <div className="absolute -right-6 -top-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
+                            {card.icon}
+                        </div>
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="p-3 bg-slate-800 rounded-xl border border-white/5 shadow-inner">
+                                {card.icon}
+                            </div>
+                            <h2 className="text-sm font-bold text-slate-400">{card.label}</h2>
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                            <span className="text-4xl font-black text-white tracking-tighter transition-all">
+                                {loading && !data ? '...' : card.value}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Row 4: Application Card (1 thẻ / hàng) */}
+            <div className="w-full">
+                <ApplicationSummaryCard dashboardData={data} loading={loading} />
+            </div>
         </div>
     );
 };
+
 
 export default Overview;

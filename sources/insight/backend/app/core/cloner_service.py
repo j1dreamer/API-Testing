@@ -222,6 +222,10 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
         is_wireless = net.get("isWireless", False)
         net_type = "WIRELESS_NETWORK" if is_wireless else "WIRED_NETWORK"
         
+        # Embed Guest Portal data if applicable
+        if net.get("isGuestPortalEnabled") and guest_portal:
+            clean_payload["_guest_portal_settings"] = guest_portal
+        
         operations.append({
             "type": net_type,
             "name": net.get("networkName") or ("SSID" if is_wireless else "Wired Network"),
@@ -235,6 +239,9 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
             if "isWireless" not in clean_wifi_payload:
                 clean_wifi_payload["isWireless"] = True
                 
+            if wifi.get("isGuestPortalEnabled") and guest_portal:
+                clean_wifi_payload["_guest_portal_settings"] = guest_portal
+                
             operations.append({
                 "type": "WIRELESS_NETWORK",
                 "name": wifi.get("networkName") or "SSID",
@@ -242,13 +249,9 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
                 "payload": clean_wifi_payload,
             })
             
-    # 2. Add Guest Portal Operation if present (APPEND so it runs AFTER networks are ready)
-    if guest_portal:
-        operations.append({
-            "type": "GUEST_PORTAL",
-            "name": "Guest Portal Settings",
-            "payload": guest_portal
-        })
+    # We no longer add GUEST_PORTAL as a separate operation in the preview list
+    # The frontend will just see SSIDs, and when applied, the backend will process the embedded guest settings
+
             
     return operations
 
@@ -274,6 +277,11 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
     }
 
     results = []
+    
+    # We will collect the guest portal settings from any SSID that has it embedded,
+    # and execute it once at the end.
+    guest_portal_settings = None
+    
     async with httpx.AsyncClient(verify=False) as client:
         base_url = f"https://portal.instant-on.hpe.com/api/sites/{target_site_id}/networksSummary"
         
@@ -281,23 +289,10 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
             try:
                 full_payload = op.get("payload", {})
                 
-                # --- Handle GUEST_PORTAL (Single Final Pass) ---
-                if op["type"] == "GUEST_PORTAL":
-                    portal_url = f"https://portal.instant-on.hpe.com/api/sites/{target_site_id}/guestPortalSettings"
-                    print(f"[CLONER] GUEST_PORTAL (Final Pass): PUT -> {op['name']}")
-                    # Strip only 'id' which is site-specific. Keep 'kind' as per user cURL.
-                    clean_portal = {k: v for k, v in full_payload.items() if k not in ["id"]}
-                    res_p = await client.put(portal_url, headers=headers, json=clean_portal, timeout=15.0)
-                    if res_p.status_code in [200, 204]:
-                        results.append({"name": op["name"], "type": op["type"], "status": "SUCCESS (GUEST_PORTAL)"})
-                    else:
-                        results.append({
-                            "name": op["name"], 
-                            "type": op["type"], 
-                            "status": f"GUEST_PORTAL FAILED [{res_p.status_code}]", 
-                            "detail": res_p.text[:500]
-                        })
-                    continue
+                # Check for embedded guest portal settings
+                if "_guest_portal_settings" in full_payload:
+                    guest_portal_settings = full_payload.pop("_guest_portal_settings")
+
 
                 # Pass 1: "Rich Identity Create" (POST)
                 # For Guest/Captive networks, the initial POST is almost the full config.
@@ -399,5 +394,28 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
             except Exception as e:
                 print(f"[CLONER] ERROR: {str(e)}")
                 results.append({"name": op["name"], "type": op["type"], "status": "ERROR", "detail": str(e)})
+
+        # --- Handle GUEST_PORTAL (Single Final Pass after all networks) ---
+        if guest_portal_settings:
+            try:
+                portal_url = f"https://portal.instant-on.hpe.com/api/sites/{target_site_id}/guestPortalSettings"
+                print(f"[CLONER] GUEST_PORTAL (Final Pass based on embedded data): PUT")
+                
+                # Strip only 'id' which is site-specific. Keep 'kind' as per user cURL.
+                clean_portal = {k: v for k, v in guest_portal_settings.items() if k not in ["id"]}
+                res_p = await client.put(portal_url, headers=headers, json=clean_portal, timeout=15.0)
+                
+                if res_p.status_code in [200, 204]:
+                    results.append({"name": "Guest Portal Settings", "type": "GUEST_PORTAL", "status": "SUCCESS (GUEST_PORTAL)"})
+                else:
+                    results.append({
+                        "name": "Guest Portal Settings", 
+                        "type": "GUEST_PORTAL", 
+                        "status": f"GUEST_PORTAL FAILED [{res_p.status_code}]", 
+                        "detail": res_p.text[:500]
+                    })
+            except Exception as e:
+                print(f"[CLONER] ERROR applying Guest Portal: {str(e)}")
+                results.append({"name": "Guest Portal Settings", "type": "GUEST_PORTAL", "status": "ERROR", "detail": str(e)})
     
     return results
