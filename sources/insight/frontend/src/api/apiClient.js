@@ -54,7 +54,10 @@ apiClient.interceptors.response.use(
         const status = error.response ? error.response.status : null;
 
         // Check if error is 401/403 and we haven't retried yet
-        if ((status === 401 || status === 403) && !originalRequest._retry) {
+        // Do not auto-refresh for explicit authentication endpoints
+        const isAuthEndpoint = originalRequest.url?.includes('/login') || originalRequest.url?.includes('/auth-session');
+
+        if ((status === 401 || status === 403) && !originalRequest._retry && !isAuthEndpoint) {
             if (isRefreshing) {
                 console.warn('SecurityService: Access Token refresh already in progress, waiting...');
                 // If currently refreshing, queue this request

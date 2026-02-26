@@ -8,7 +8,8 @@ from app.core.cloner_service import (
     apply_config_to_site,
     apply_config_live,
     get_site_ssids,
-    sync_ssids_passwords
+    sync_ssids_passwords,
+    sync_ssids_create
 )
 from app.core.replay_service import replay_login
 
@@ -50,10 +51,18 @@ async def cloner_login(
     password: str = Body(..., embed=True)
 ):
     """Trigger a portal login to refresh the ACTIVE_TOKEN."""
+    from app.core.allowed_emails import is_email_allowed
+    if not is_email_allowed(username):
+        raise HTTPException(status_code=401, detail="Email không có quyền truy cập vào hệ thống Insight.")
+        
     try:
         from app.core.replay_service import replay_login
         token = await replay_login(username, password)
+        if token.get("status") == "error":
+            raise HTTPException(status_code=401, detail=token.get("message", "Login failed"))
         return {"status": "success", "token_type": "Bearer", "expires_in": token.get("expires_in")}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=401, detail=str(e))
 
@@ -166,3 +175,75 @@ async def execute_delete_sync(
         "status": "success",
         "results": results
     }
+
+@router.post("/sync-create")
+async def execute_create_sync(
+    network_name: str = Body(...),
+    network_type: str = Body(...),
+    security: str = Body(...),
+    password: str = Body(""),
+    is_hidden: bool = Body(False),
+    is_wifi6_enabled: bool = Body(True),
+    band_24: bool = Body(True),
+    band_5: bool = Body(True),
+    band_6: bool = Body(True),
+    client_isolation: bool = Body(False),
+    vlan_id: int = Body(None),
+    target_site_ids: List[str] = Body(...)
+):
+    """Batch create a new SSID across target sites with advanced capabilities"""
+    from app.core import cloner_service
+    if not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target site IDs provided.")
+    
+    # ... existing method body ...
+    advanced_options = {
+        "is_hidden": is_hidden,
+        "is_wifi6_enabled": is_wifi6_enabled,
+        "band_24": band_24,
+        "band_5": band_5,
+        "band_6": band_6,
+        "client_isolation": client_isolation,
+        "vlan_id": vlan_id
+    }
+    
+    results = await cloner_service.sync_ssids_create(
+        network_name, network_type, security, password, advanced_options, target_site_ids
+    )
+    return {
+        "status": "success",
+        "results": results
+    }
+
+@router.get("/site-overview/{site_id}")
+async def get_site_overview(site_id: str):
+    """Fetch network overview for a specific site, including wired/wireless and VLAN details."""
+    from app.core import cloner_service
+    
+    try:
+        config = await cloner_service.fetch_site_config_live(site_id)
+        if "error" in config:
+            raise HTTPException(status_code=400, detail=config["error"])
+            
+        networks = config.get("networks", [])
+        if isinstance(networks, dict):
+            networks = networks.get("elements", [])
+            
+        network_details = []
+        for net in networks:
+            network_details.append({
+                "id": net.get("id"),
+                "name": net.get("networkName", "Unnamed Network"),
+                "type": net.get("type", "UNKNOWN"),
+                "isWireless": net.get("isWireless", False),
+                "vlanId": net.get("vlanId"),
+                "isEnabled": net.get("isEnabled", True)
+            })
+            
+        return {
+            "status": "success",
+            "networks": network_details
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

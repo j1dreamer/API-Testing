@@ -728,3 +728,205 @@ async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str]
         exec_results = await asyncio.gather(*tasks)
         
     return list(exec_results)
+
+async def sync_ssids_create(
+    network_name: str, 
+    network_type: str, 
+    security: str, 
+    password: str, 
+    advanced_options: Dict[str, Any],
+    target_site_ids: List[str]
+) -> List[Dict[str, Any]]:
+    """Create a new SSID on multiple target sites utilizing a two pass POST+PUT technique"""
+    if not replay_service.ACTIVE_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session.")
+    
+    headers = {
+        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-us",
+        "X-ION-API-VERSION": "22",
+        "X-ION-CLIENT-TYPE": "InstantOn",
+        "X-ION-CLIENT-PLATFORM": "web",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        "Content-Type": "application/json"
+    }
+
+    import asyncio
+    results = []
+    
+    # 1. Base Configuration representing the complete desired state
+    full_payload = {
+        "networkName": network_name,
+        "type": "WIRELESS_NETWORK",
+        "authentication": "WPA2_PSK" if security == "WPA2_PSK" else "OPEN",
+        "security": security,
+        "isWireless": True,
+        "ipAddressingMode": "internal" if network_type == "EMPLOYEE" else "NAT", 
+        "isEnabled": True,
+        "isCaptivePortalEnabled": False,
+        "isGuestPortalEnabled": True if network_type == "GUEST" else False,
+        "isSsidHidden": advanced_options.get("is_hidden", False),
+        "isAvailableOn24GHzRadioBand": advanced_options.get("band_24", True),
+        "isAvailableOn5GHzRadioBand": advanced_options.get("band_5", True),
+        "isAvailableOn6GHzRadioBand": advanced_options.get("band_6", True),
+        "isLegacy80211bRatesEnabled": False,
+        "isHighEfficiency11axEnabled": advanced_options.get("is_wifi6_enabled", True),
+        "isHighEfficiency11axOfdmaEnabled": advanced_options.get("is_wifi6_enabled", True),
+        "isDynamicMulticastOptimizationEnabled": False,
+        "isBroadcastOnAllBoundApsOnAllBands": True,
+        "isInternetAllowed": True,
+        "isIntraSubnetTrafficAllowed": True,
+        "isAccessRestricted": advanced_options.get("client_isolation", False),
+        "useVlan": advanced_options.get("vlan_id") is not None,
+        "vlanId": advanced_options.get("vlan_id"),
+        "preSharedKey": password if security == "WPA2_PSK" else "",
+        "wiredNetworkId": None
+    }
+    
+    # GUEST overrides
+    if network_type == "GUEST":
+        full_payload["ipAddressingMode"] = "NAT"
+        full_payload["isIntraSubnetTrafficAllowed"] = False
+
+    async def create_site_ssid(client: httpx.AsyncClient, site_id: str):
+        # Pre-flight Check
+        site_check_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}"
+        try:
+            res_check = await client.get(site_check_url, headers=headers, timeout=10.0)
+            if res_check.status_code == 200:
+                site_data = res_check.json()
+                role = (site_data.get("userRoleOnSite") or "").lower()
+                if role not in ["administrator", "operator"]:
+                    return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Insufficient permissions ({role})"}
+            else:
+                 return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Failed to verify permissions ({res_check.status_code})"}
+        except Exception as e:
+            return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Permission check error: {str(e)}"}
+
+        base_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
+        api_headers = headers.copy()
+        api_headers["Referer"] = f"https://portal.instant-on.hpe.com/sites/{site_id}/networks/overview"
+        
+        # Phase 1: POST Create (Minimal/Clean Payload)
+        # Based on actual user provided trace:
+        create_payload = {
+            "authentication": full_payload.get("authentication"),
+            "security": full_payload.get("security"),
+            "networkName": full_payload.get("networkName"),
+            "isEnabled": full_payload.get("isEnabled"),
+            "useVlan": full_payload.get("useVlan"),
+            "vlanId": full_payload.get("vlanId"),
+            "isSsidHidden": full_payload.get("isSsidHidden"),
+            "isWireless": full_payload.get("isWireless"),
+            "type": full_payload.get("type").lower() if full_payload.get("type") == "WIRELESS_NETWORK" else full_payload.get("type").lower(),
+            "isCaptivePortalEnabled": full_payload.get("isCaptivePortalEnabled"),
+            "ipAddressingMode": "network" if full_payload.get("ipAddressingMode") == "internal" else full_payload.get("ipAddressingMode"),
+            "isAvailableOn24GHzRadioBand": full_payload.get("isAvailableOn24GHzRadioBand"),
+            "isAvailableOn5GHzRadioBand": full_payload.get("isAvailableOn5GHzRadioBand"),
+            "isAvailableOn6GHzRadioBand": full_payload.get("isAvailableOn6GHzRadioBand"),
+            "isLegacy80211bRatesEnabled": full_payload.get("isLegacy80211bRatesEnabled"),
+            "isHighEfficiency11axEnabled": full_payload.get("isHighEfficiency11axEnabled"),
+            "isHighEfficiency11axOfdmaEnabled": full_payload.get("isHighEfficiency11axOfdmaEnabled"),
+            "isDynamicMulticastOptimizationEnabled": full_payload.get("isDynamicMulticastOptimizationEnabled"),
+            "isBroadcastOnAllBoundApsOnAllBands": full_payload.get("isBroadcastOnAllBoundApsOnAllBands"),
+            "accessPoints": [],
+            "wiredNetworkId": None,
+            "schedule": {
+                "activeDays": ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"],
+                "activeTimeRange": {"enabled": True, "startTime": "09:00", "endTime": "17:00"}
+            },
+            "weekSchedule": {
+                "schedulePerWeekdayMap": {
+                    day: {"enabled": False, "activeAllDay": True, "startTime": "09:00", "endTime": "17:00"}
+                    for day in ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+                }
+            },
+            "activeSchedule": "simple",
+            "isBandwidthLimitEnabled": False,
+            "isAccessRestricted": full_payload.get("isAccessRestricted"),
+            "isInternetAllowed": full_payload.get("isInternetAllowed"),
+            "isIntraSubnetTrafficAllowed": full_payload.get("isIntraSubnetTrafficAllowed"),
+            "isSpecificDestinationsAllowed": None,
+            "allowedDestinations": [],
+            "localAirgroupServices": [],
+            "sharedAirgroupServices": []
+        }
+        
+        # User auth payload mapping:
+        if full_payload.get("authentication") == "WPA2_PSK":
+            create_payload["authentication"] = "psk"
+            create_payload["security"] = "wpa2"
+            create_payload["preSharedKey"] = full_payload.get("preSharedKey")
+        elif full_payload.get("authentication") == "WPA3_SAE_PSK": # Just in case it's actually wpa3
+             create_payload["authentication"] = "psk"
+             create_payload["security"] = "wpa3"
+             create_payload["preSharedKey"] = full_payload.get("preSharedKey")
+        elif full_payload.get("authentication") == "OPEN":
+            create_payload["authentication"] = "open"
+            create_payload["security"] = "open"
+            
+        # Type mapping based on curl
+        create_payload["type"] = "employee" if network_type == "EMPLOYEE" else "guest"
+        
+        # Determine wiredNetworkId by fetching site config
+        try:
+            site_config = await fetch_site_config_live(site_id)
+            networks = site_config.get("networks", [])
+            if isinstance(networks, dict):
+                networks = networks.get("elements", [])
+            wired_net_id = None
+            for net in networks:
+                if net.get("type", "").lower() == "wired":
+                    wired_net_id = net.get("id")
+                    break
+            
+            # Use found wiredNetworkId or fallback
+            create_payload["wiredNetworkId"] = wired_net_id
+        except Exception as e:
+            print(f"[CLONER] Failed to resolve wiredNetworkId: {e}")
+
+        try:
+            res_post = await client.post(base_url, headers=api_headers, json=create_payload, timeout=15.0)
+            
+            def safe_json(res):
+                try:
+                    return res.json()
+                except:
+                    return res.text
+            
+            if res_post.status_code not in [200, 201]:
+                return {"target": site_id, "name": network_name, "status": "ERROR", "detail": safe_json(res_post)}
+            
+            post_data = safe_json(res_post)
+            if isinstance(post_data, str):
+                return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Phase 1 Success but response is not JSON: {post_data}"}
+            
+            new_id = post_data.get("networkId") or post_data.get("id")
+            if not new_id:
+                return {"target": site_id, "name": network_name, "status": "SKIPPED", "detail": "Phase 1 succeeded, but ID missing to do Phase 2."}
+            
+            await asyncio.sleep(0.8)
+            
+            # Phase 2: PUT Update (Full Payload context) Requires hitting /networks/{id} not /networksSummary
+            update_payload = dict(full_payload)
+            update_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networks/{new_id}"
+            
+            res_put = await client.put(update_url, headers=api_headers, json=update_payload, timeout=15.0)
+            if res_put.status_code in [200, 204]:
+                return {"target": site_id, "name": network_name, "status": "SUCCESS", "detail": "SSID customized successfully (POST+PUT)"}
+            else:
+                return {"target": site_id, "name": network_name, "status": "ERROR", "detail": {
+                    "message": f"Phase 1 OK, Phase 2 (PUT) failed with status {res_put.status_code}",
+                    "api_error": safe_json(res_put)
+                }}
+                
+        except Exception as e:
+            return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Request error: {str(e)}"}
+
+    async with httpx.AsyncClient(verify=False) as client:
+        tasks = [create_site_ssid(client, sid) for sid in target_site_ids]
+        exec_results = await asyncio.gather(*tasks)
+        
+    return list(exec_results)

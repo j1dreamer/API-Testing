@@ -33,25 +33,21 @@ const Login = ({ onLoginSuccess }) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
         try {
             const res = await apiClient.post('/cloner/login', { username, password });
             sessionStorage.setItem('token', res.data?.token_value || 'aruba_session');
             sessionStorage.setItem('insight_user_email', username);
 
-            // Add a small delay to ensure backend session is fully established 
-            // and frontend state doesn't trigger requests too fast
-            setTimeout(() => {
-                onLoginSuccess();
-            }, 1500);
-
+            // Do not setLoading(false) here, let it spin until unmount
+            onLoginSuccess();
         } catch (err) {
+            setLoading(false); // Only stop loading on error
             if (err.response?.status === 400 || err.response?.status === 401) {
                 setError(t('login.error_invalid'));
             } else {
                 setError(err.response?.data?.detail || t('login.error_failed'));
             }
-        } finally {
-            setLoading(false);
         }
     };
 

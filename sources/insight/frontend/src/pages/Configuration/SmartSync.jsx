@@ -25,6 +25,21 @@ const SmartSync = () => {
     const [selectedSSIDName, setSelectedSSIDName] = useState(''); // We use name instead of ID for cross-site matching
     const [newPassword, setNewPassword] = useState('');
 
+    // State for Config Sync Create
+    const [newSSIDName, setNewSSIDName] = useState('');
+    const [newNetworkType, setNewNetworkType] = useState('EMPLOYEE');
+    const [newSecurity, setNewSecurity] = useState('WPA2_PSK');
+
+    // Advanced Create States
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [newVlanId, setNewVlanId] = useState('');
+    const [newIsHidden, setNewIsHidden] = useState(false);
+    const [newWifi6Enabled, setNewWifi6Enabled] = useState(true);
+    const [newBand24, setNewBand24] = useState(true);
+    const [newBand5, setNewBand5] = useState(true);
+    const [newBand6, setNewBand6] = useState(true);
+    const [newClientIsolation, setNewClientIsolation] = useState(false);
+
     // State for Config Sync Mode
     const [selectedSourceSiteId, setSelectedSourceSiteId] = useState('');
     const [sourceSSIDs, setSourceSSIDs] = useState([]);
@@ -80,6 +95,22 @@ const SmartSync = () => {
             setSelectedSourceSiteId('');
             setSourceSSIDs([]);
             setNewPassword('');
+            setNewSSIDName('');
+            setNewNetworkType('EMPLOYEE');
+            setNewSecurity('WPA2_PSK');
+            setShowAdvanced(false);
+            setNewVlanId('');
+            setNewIsHidden(false);
+            setNewWifi6Enabled(true);
+            setNewBand24(true);
+            setNewBand5(true);
+            setNewBand6(true);
+            setNewClientIsolation(false);
+
+            // Reset Scanner
+            setScannedNetworks([]);
+            setScannerTargetSiteId('');
+            setIsScanningSite(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTargetIds, selectedAction]);
@@ -120,7 +151,10 @@ const SmartSync = () => {
 
             // Compile unique SSIDs by networkName
             const uniqueSSIDMap = new Map();
-            responses.forEach(res => {
+            responses.forEach((res, index) => {
+                const siteId = siteIds[index];
+                const siteInfo = liveSites.find(s => s.siteId === siteId);
+                const siteName = siteInfo ? siteInfo.siteName : siteId;
                 const ssids = res.data || [];
                 ssids.forEach(ssid => {
                     if (!uniqueSSIDMap.has(ssid.networkName)) {
@@ -128,18 +162,22 @@ const SmartSync = () => {
                             networkName: ssid.networkName,
                             security: ssid.security,
                             isGuestPortalEnabled: ssid.isGuestPortalEnabled,
-                            foundInSites: 1
+                            foundInSites: 1,
+                            foundInSiteNames: [siteName]
                         });
                     } else {
                         uniqueSSIDMap.get(ssid.networkName).foundInSites += 1;
+                        uniqueSSIDMap.get(ssid.networkName).foundInSiteNames.push(siteName);
                     }
                 });
             });
 
-            // Convert to array and sort
             const compiledList = Array.from(uniqueSSIDMap.values()).sort((a, b) => a.networkName.localeCompare(b.networkName));
             setCompiledSSIDs(compiledList);
             setHasAnalyzed(true);
+
+            // For create, default to step 2 immediately and setup defaults if needed.
+            // But we actually still want the user to go to Step 2.
             setCurrentStep(2);
 
         } catch (e) {
@@ -150,30 +188,69 @@ const SmartSync = () => {
         }
     };
 
-    const handleProceedToExecution = () => {
-        if (!selectedSSIDName) return alert("Vui lòng chọn một SSID.");
+    const handleScanTargetSite = async () => {
+        if (!scannerTargetSiteId) return alert("Vui lòng chọn Site để quét");
 
+        try {
+            setIsScanningSite(true);
+            const res = await apiClient.get(`/cloner/site-overview/${scannerTargetSiteId}`);
+            if (res.data && res.data.networks) {
+                setScannedNetworks(res.data.networks);
+            } else {
+                setScannedNetworks([]);
+            }
+        } catch (error) {
+            console.error("Failed to scan site:", error);
+            alert("Đã xảy ra lỗi khi quét cấu hình Site.");
+            setScannedNetworks([]);
+        } finally {
+            setIsScanningSite(false);
+        }
+    };
+
+    const handleProceedToExecution = () => {
         if (selectedAction === 'update_ssid_password') {
+            if (!selectedSSIDName) return alert("Vui lòng chọn một SSID.");
             const selectedSSID = compiledSSIDs.find(s => s.networkName === selectedSSIDName);
             if (selectedSSID && selectedSSID.isGuestPortalEnabled) {
                 return alert("Không thể đổi mật khẩu cho Guest Portal SSID.");
             }
             if (!newPassword || newPassword.length < 8) return alert("Mật khẩu phải từ 8 ký tự trở lên.");
         } else if (selectedAction === 'update_ssid_config') {
+            if (!selectedSSIDName) return alert("Vui lòng chọn một SSID.");
             if (!selectedSourceSiteId) return alert("Vui lòng chọn Origin Site.");
         } else if (selectedAction === 'delete_ssid') {
-            // Nothing extra to validate for delete_ssid except selectedSSIDName
+            if (!selectedSSIDName) return alert("Vui lòng chọn một SSID.");
+        } else if (selectedAction === 'create_ssid') {
+            if (!newSSIDName) return alert("Vui lòng nhập tên mạng (SSID).");
+            if (compiledSSIDs.some(s => s.networkName === newSSIDName)) {
+                return alert(`SSID '${newSSIDName}' đã tồn tại trên một số Site mục tiêu. Vui lòng chọn tên khác.`);
+            }
+            if (newSecurity === 'WPA2_PSK' && (!newPassword || newPassword.length < 8)) {
+                return alert("Mật khẩu WPA2 phải từ 8 ký tự trở lên.");
+            }
+            if (newVlanId !== '' && (isNaN(newVlanId) || newVlanId < 1 || newVlanId > 4094)) {
+                return alert("VLAN ID phải là số từ 1 đến 4094.");
+            }
+            if (!newBand24 && !newBand5 && !newBand6) {
+                return alert("Phải chọn ít nhất 1 băng tần (2.4GHz, 5GHz, hoặc 6GHz).");
+            }
         }
 
         setCurrentStep(3);
     };
 
     const handleExecuteSync = async () => {
-        if (selectedTargetIds.size === 0 || !selectedSSIDName) return;
+        if (selectedTargetIds.size === 0) return;
+        if (selectedAction !== 'create_ssid' && !selectedSSIDName) return;
 
-        let confirmMsg = `Xác nhận cập nhật cho SSID "${selectedSSIDName}" trên ${selectedTargetIds.size} sites?`;
+        let confirmMsg = '';
         if (selectedAction === 'delete_ssid') {
             confirmMsg = `⚠️ CẢNH BÁO NGUY HIỂM ⚠️\nBạn có chắc chắn muốn XÓA SSID "${selectedSSIDName}" trên ${selectedTargetIds.size} sites không?\nHành động này không thể hoàn tác!`;
+        } else if (selectedAction === 'create_ssid') {
+            confirmMsg = `Xác nhận tạo SSID mới "${newSSIDName}" trên ${selectedTargetIds.size} sites?`;
+        } else {
+            confirmMsg = `Xác nhận cập nhật cho SSID "${selectedSSIDName}" trên ${selectedTargetIds.size} sites?`;
         }
 
         if (!confirm(confirmMsg)) return;
@@ -202,6 +279,22 @@ const SmartSync = () => {
                     target_site_ids: Array.from(selectedTargetIds)
                 };
                 res = await apiClient.post('/cloner/sync-delete', payload);
+            } else if (selectedAction === 'create_ssid') {
+                const payload = {
+                    network_name: newSSIDName,
+                    network_type: newNetworkType,
+                    security: newSecurity,
+                    password: newSecurity === 'WPA2_PSK' ? newPassword : '',
+                    is_hidden: newIsHidden,
+                    is_wifi6_enabled: newWifi6Enabled,
+                    band_24: newBand24,
+                    band_5: newBand5,
+                    band_6: newBand6,
+                    client_isolation: newClientIsolation,
+                    vlan_id: newVlanId ? parseInt(newVlanId, 10) : null,
+                    target_site_ids: Array.from(selectedTargetIds)
+                };
+                res = await apiClient.post('/cloner/sync-create', payload);
             }
 
             if (res?.data?.status === 'success') {
@@ -298,6 +391,7 @@ const SmartSync = () => {
                                             <option value="update_ssid_password">Update Wireless PSK</option>
                                             <option value="update_ssid_config">Update Deep SSID Config</option>
                                             <option value="delete_ssid">Delete SSID Multi-Site</option>
+                                            {/* <option value="create_ssid">Create New SSID Multi-Site</option> */}
                                         </select>
                                     </div>
                                     <div className="p-5 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-2xl">
@@ -416,7 +510,248 @@ const SmartSync = () => {
                                 </h3>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                                    {selectedAction === 'update_ssid_password' || selectedAction === 'delete_ssid' ? (
+                                    {selectedAction === 'create_ssid' ? (
+                                        <>
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">3. Network Name (SSID)</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full bg-white dark:bg-black/60 border border-slate-200 dark:border-white/10 rounded-2xl px-6 h-14 text-lg font-bold focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                                        placeholder="Enter Wi-Fi Name..."
+                                                        value={newSSIDName}
+                                                        onChange={(e) => setNewSSIDName(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Network Type</label>
+                                                    <div className="flex gap-4">
+                                                        <label className={`flex-1 p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-center gap-2 ${newNetworkType === 'EMPLOYEE' ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-white border-slate-200 text-slate-500 dark:bg-black/40 dark:border-white/10 dark:text-slate-400'}`}>
+                                                            <input type="radio" name="networkType" value="EMPLOYEE" checked={newNetworkType === 'EMPLOYEE'} onChange={() => setNewNetworkType('EMPLOYEE')} className="hidden" />
+                                                            <Lock size={16} /> Employee
+                                                        </label>
+                                                        <label className={`flex-1 p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-center gap-2 ${newNetworkType === 'GUEST' ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-white border-slate-200 text-slate-500 dark:bg-black/40 dark:border-white/10 dark:text-slate-400'}`}>
+                                                            <input type="radio" name="networkType" value="GUEST" checked={newNetworkType === 'GUEST'} onChange={() => setNewNetworkType('GUEST')} className="hidden" />
+                                                            <Wifi size={16} /> Guest
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">Security</label>
+                                                    <select
+                                                        value={newSecurity}
+                                                        onChange={e => {
+                                                            setNewSecurity(e.target.value);
+                                                            if (e.target.value !== 'WPA2_PSK') setNewPassword('');
+                                                        }}
+                                                        className="w-full h-14 bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-2xl px-6 text-slate-800 dark:text-white font-bold appearance-none focus:outline-none focus:border-emerald-500/50"
+                                                    >
+                                                        <option value="WPA2_PSK">WPA2 Personal</option>
+                                                        <option value="OPEN">Open (No Password)</option>
+                                                    </select>
+                                                </div>
+
+                                                {newSecurity === 'WPA2_PSK' && (
+                                                    <div>
+                                                        <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                                                            <Lock size={12} className="text-slate-400" /> Password
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full bg-white dark:bg-black/60 border border-slate-200 dark:border-white/10 rounded-2xl px-6 h-14 text-lg font-mono focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:outline-none placeholder:text-slate-300 dark:placeholder:text-slate-700"
+                                                            placeholder="Enter min 8 characters..."
+                                                            value={newPassword}
+                                                            onChange={(e) => setNewPassword(e.target.value)}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Advanced Settings Link */}
+                                            <div className="md:col-span-2 mt-4 pt-4 border-t border-slate-100 dark:border-white/5">
+                                                <button
+                                                    onClick={() => setShowAdvanced(!showAdvanced)}
+                                                    className="flex items-center gap-2 text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                                                >
+                                                    <Sliders size={16} />
+                                                    {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings"}
+                                                </button>
+                                            </div>
+
+                                            {/* Advanced Settings Panel */}
+                                            {showAdvanced && (
+                                                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 mt-4 animate-fade-in bg-slate-50/50 dark:bg-black/20 p-6 rounded-2xl border border-slate-200 dark:border-white/5">
+
+                                                    {/* Left Column Advanced */}
+                                                    <div className="space-y-6">
+                                                        {newNetworkType === 'EMPLOYEE' && (
+                                                            <div>
+                                                                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">VLAN Assignment</label>
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="flex-1">
+                                                                        <select
+                                                                            className="w-full h-12 bg-white dark:bg-black/60 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm font-bold appearance-none focus:outline-none focus:border-emerald-500/50"
+                                                                            value={newVlanId ? 'CUSTOM' : 'DEFAULT'}
+                                                                            onChange={(e) => {
+                                                                                if (e.target.value === 'DEFAULT') setNewVlanId('');
+                                                                                else setNewVlanId('1'); // Default custom vlan
+                                                                            }}
+                                                                        >
+                                                                            <option value="DEFAULT">Default Network (Untagged)</option>
+                                                                            <option value="CUSTOM">Specific VLAN</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    {newVlanId !== '' && (
+                                                                        <input
+                                                                            type="number"
+                                                                            min="1" max="4094"
+                                                                            className="w-24 h-12 bg-white dark:bg-black/60 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 focus:outline-none"
+                                                                            placeholder="ID"
+                                                                            value={newVlanId}
+                                                                            onChange={(e) => setNewVlanId(e.target.value)}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div>
+                                                            <label className="flex items-center gap-3 cursor-pointer group">
+                                                                <div className="relative">
+                                                                    <input type="checkbox" checked={newIsHidden} onChange={(e) => setNewIsHidden(e.target.checked)} className="peer sr-only" />
+                                                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Hide SSID from broadcast</span>
+                                                            </label>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="flex items-center gap-3 cursor-pointer group">
+                                                                <div className="relative">
+                                                                    <input type="checkbox" checked={newWifi6Enabled} onChange={(e) => setNewWifi6Enabled(e.target.checked)} className="peer sr-only" />
+                                                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                                                                </div>
+                                                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Enable Wi-Fi 6 (802.11ax)</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Right Column Advanced */}
+                                                    <div className="space-y-6">
+                                                        <div>
+                                                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Radio Bands</label>
+                                                            <div className="flex gap-4">
+                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                    <input type="checkbox" checked={newBand24} onChange={e => setNewBand24(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">2.4 GHz</span>
+                                                                </label>
+                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                    <input type="checkbox" checked={newBand5} onChange={e => setNewBand5(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">5 GHz</span>
+                                                                </label>
+                                                                <label className="flex items-center gap-2 cursor-pointer">
+                                                                    <input type="checkbox" checked={newBand6} onChange={e => setNewBand6(e.target.checked)} className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">6 GHz</span>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+
+                                                        {newNetworkType === 'EMPLOYEE' && (
+                                                            <div>
+                                                                <label className="flex items-start gap-3 cursor-pointer group mt-4">
+                                                                    <div className="relative mt-0.5">
+                                                                        <input type="checkbox" checked={newClientIsolation} onChange={(e) => setNewClientIsolation(e.target.checked)} className="peer sr-only" />
+                                                                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors block">Restrict Client Access</span>
+                                                                        <span className="text-[10px] text-slate-500 leading-tight block mt-1">Clients on this network will only be able to reach the internet and cannot communicate with each other.</span>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Target Site Scanner Panel */}
+                                            <div className="md:col-span-2 mt-8 pt-8 border-t border-slate-200 dark:border-white/10">
+                                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                                    <Search size={16} className="text-blue-500" /> Target Site Scanner
+                                                </h4>
+                                                <p className="text-xs text-slate-500 mb-4">Select a target site to scan its existing networks and VLAN IDs before creating a new SSID.</p>
+
+                                                <div className="flex gap-4 mb-4">
+                                                    <select
+                                                        value={scannerTargetSiteId}
+                                                        onChange={(e) => setScannerTargetSiteId(e.target.value)}
+                                                        className="flex-1 h-12 bg-white dark:bg-black/60 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm font-bold appearance-none focus:outline-none focus:border-emerald-500/50"
+                                                    >
+                                                        <option value="">-- Select Target Site to Scan --</option>
+                                                        {Array.from(selectedTargetIds).map(siteId => {
+                                                            const site = liveSites.find(s => s.siteId === siteId);
+                                                            return <option key={siteId} value={siteId}>{site ? site.siteName : siteId}</option>;
+                                                        })}
+                                                    </select>
+                                                    <button
+                                                        onClick={handleScanTargetSite}
+                                                        disabled={!scannerTargetSiteId || isScanningSite}
+                                                        className="px-6 h-12 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
+                                                    >
+                                                        {isScanningSite ? <Activity size={16} className="animate-spin" /> : <Search size={16} />}
+                                                        Scan
+                                                    </button>
+                                                </div>
+
+                                                {scannedNetworks.length > 0 && (
+                                                    <div className="bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden">
+                                                        <div className="max-h-60 overflow-y-auto">
+                                                            <table className="w-full text-left text-sm">
+                                                                <thead className="bg-slate-100 dark:bg-white/5 sticky top-0">
+                                                                    <tr>
+                                                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-400">Network Name</th>
+                                                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-400">Type</th>
+                                                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-400">VLAN ID</th>
+                                                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-400">Status</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-slate-200 dark:divide-white/5">
+                                                                    {scannedNetworks.map(net => (
+                                                                        <tr key={net.id} className="hover:bg-white dark:hover:bg-white/5">
+                                                                            <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                                                                {net.isWireless ? <Wifi size={14} className="text-blue-500" /> : <Network size={14} className="text-emerald-500" />}
+                                                                                {net.name}
+                                                                            </td>
+                                                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase">{net.type}</td>
+                                                                            <td className="px-4 py-3">
+                                                                                {net.vlanId ? (
+                                                                                    <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded text-xs font-bold font-mono">
+                                                                                        VLAN {net.vlanId}
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="text-slate-400 dark:text-slate-600 text-xs">-</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-4 py-3">
+                                                                                {net.isEnabled ? (
+                                                                                    <span className="text-emerald-500 flex items-center gap-1 text-xs font-bold"><CheckCircle size={12} /> Enabled</span>
+                                                                                ) : (
+                                                                                    <span className="text-slate-400 flex items-center gap-1 text-xs font-bold"><XCircle size={12} /> Disabled</span>
+                                                                                )}
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </>
+                                    ) : selectedAction === 'update_ssid_password' || selectedAction === 'delete_ssid' ? (
                                         <>
                                             <div className="space-y-6">
                                                 <div>
@@ -435,8 +770,9 @@ const SmartSync = () => {
                                                                     value={ssid.networkName}
                                                                     className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 disabled:opacity-50 disabled:bg-slate-100"
                                                                     disabled={isDisabled}
+                                                                    title={ssid.foundInSiteNames.join(', ')}
                                                                 >
-                                                                    {ssid.networkName} (Found in {ssid.foundInSites} site{ssid.foundInSites > 1 ? 's' : ''}) {isDisabled ? '[GUEST - Password Update Not Supported]' : ''}
+                                                                    {ssid.networkName} (Found in {ssid.foundInSites} site{ssid.foundInSites > 1 ? 's' : ''}: {ssid.foundInSiteNames.join(', ')}) {isDisabled ? '[GUEST - Password Update Not Supported]' : ''}
                                                                 </option>
                                                             );
                                                         })}
@@ -495,14 +831,16 @@ const SmartSync = () => {
                                                     >
                                                         <option value="">-- Choose Origin SSID --</option>
                                                         {sourceSSIDs.map(ssid => {
-                                                            const existsInTarget = compiledSSIDs.some(s => s.networkName === ssid.networkName);
+                                                            const matchingSSID = compiledSSIDs.find(s => s.networkName === ssid.networkName);
+                                                            const existsInTarget = !!matchingSSID;
                                                             return (
                                                                 <option
                                                                     key={ssid.networkId || ssid.networkName}
                                                                     value={ssid.networkName}
                                                                     className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                                                                    title={existsInTarget ? matchingSSID.foundInSiteNames.join(', ') : ''}
                                                                 >
-                                                                    {ssid.networkName} {existsInTarget ? `(Matches ${compiledSSIDs.find(s => s.networkName === ssid.networkName)?.foundInSites} targets)` : '(Will skip on targets)'}
+                                                                    {ssid.networkName} {existsInTarget ? `(Matches ${matchingSSID.foundInSites} targets: ${matchingSSID.foundInSiteNames.join(', ')})` : '(Will skip on targets)'}
                                                                 </option>
                                                             );
                                                         })}
@@ -522,7 +860,7 @@ const SmartSync = () => {
                                     </button>
                                     <button
                                         onClick={handleProceedToExecution}
-                                        disabled={selectedAction === 'update_ssid_password' ? (!selectedSSIDName || !newPassword || newPassword.length < 8) : selectedAction === 'delete_ssid' ? !selectedSSIDName : (!selectedSSIDName || !selectedSourceSiteId)}
+                                        disabled={selectedAction === 'update_ssid_password' ? (!selectedSSIDName || !newPassword || newPassword.length < 8) : selectedAction === 'delete_ssid' ? !selectedSSIDName : selectedAction === 'create_ssid' ? (!newSSIDName || (newSecurity === 'WPA2_PSK' && (!newPassword || newPassword.length < 8))) : (!selectedSSIDName || !selectedSourceSiteId)}
                                         className="h-14 px-10 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black uppercase tracking-widest rounded-xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 disabled:hover:scale-100"
                                     >
                                         Proceed to Deploy
@@ -602,8 +940,18 @@ const SmartSync = () => {
                                                         <div className="shrink-0 w-[90px] font-black tracking-widest">
                                                             {log.status}
                                                         </div>
-                                                        <div className="text-slate-400 truncate flex-1 flex items-center opacity-80" title={log.detail}>
-                                                            {icon} {log.detail}
+                                                        <div className="text-slate-400 flex-1 opacity-80 overflow-hidden">
+                                                            <div className="flex items-center gap-2 mb-1 truncate">
+                                                                {icon}
+                                                                {typeof log.detail === 'object' && log.detail.message ? log.detail.message : (typeof log.detail === 'string' ? log.detail : 'Execution detailed log:')}
+                                                            </div>
+                                                            {typeof log.detail === 'object' && (
+                                                                <div className="mt-2 bg-black/40 p-3 rounded-lg overflow-x-auto">
+                                                                    <pre className="text-[10px] text-slate-400 break-all whitespace-pre-wrap font-mono">
+                                                                        {JSON.stringify(log.detail.api_error || log.detail, null, 2)}
+                                                                    </pre>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
