@@ -66,8 +66,8 @@ const Alerts = () => {
         <div className="p-8 pb-32">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight">Active Alerts</h1>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Active Alerts</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Monitoring {selectedSite ? selectedSite.siteName : 'all sites'}
                     </p>
                 </div>
@@ -124,11 +124,11 @@ const Alerts = () => {
                 ))}
 
                 {!loading && alerts.length === 0 && (
-                    <div className="bg-slate-900 rounded-3xl p-20 border border-white/5 flex flex-col items-center justify-center text-center">
-                        <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-20 border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center">
+                        <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
                             <Bell size={40} className="opacity-40" />
                         </div>
-                        <h2 className="text-xl font-bold text-white mb-2">All Quiet!</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">All Quiet!</h2>
                         <p className="text-slate-500 max-w-xs">There are no active alerts for the selected site at this moment.</p>
                     </div>
                 )}

@@ -196,8 +196,8 @@ const Clients = () => {
         <div className="p-8 pb-32">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight">Connected Clients</h1>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">Connected Clients</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Active sessions at {sites.find(s => s.siteId === selectedSiteId)?.siteName || 'current site'}
                     </p>
                 </div>
@@ -216,7 +216,7 @@ const Clients = () => {
                         placeholder="Search by name, MAC, or IP address..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-14 pl-12 pr-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm focus:outline-none focus:border-blue-500/50 shadow-inner"
+                        className="w-full h-14 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white text-sm focus:outline-none focus:border-blue-500/50 shadow-inner"
                     />
                 </div>
 
@@ -226,7 +226,7 @@ const Clients = () => {
                         <select
                             value={typeFilter}
                             onChange={(e) => setTypeFilter(e.target.value)}
-                            className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 min-w-[140px] appearance-none"
+                            className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 min-w-[140px] appearance-none"
                         >
                             <option value="all">All Types</option>
                             <option value="wired">Wired</option>
@@ -239,7 +239,7 @@ const Clients = () => {
                         <select
                             value={healthFilter}
                             onChange={(e) => setHealthFilter(e.target.value)}
-                            className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 min-w-[140px] appearance-none"
+                            className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-blue-500/50 min-w-[140px] appearance-none"
                         >
                             <option value="all">All Health</option>
                             <option value="good">Good</option>
@@ -257,10 +257,10 @@ const Clients = () => {
                 </div>
             )}
 
-            <div className="bg-slate-900 rounded-3xl shadow-2xl border border-white/5 overflow-hidden w-full">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden w-full">
                 <div className="max-h-[calc(100vh-250px)] overflow-auto custom-scrollbar">
                     <table className="w-full min-w-[1200px] text-left text-sm whitespace-nowrap block md:table">
-                        <thead className="text-slate-500 border-b border-white/5 table-header-sticky">
+                        <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 border-b border-slate-200 dark:border-white/5 table-header-sticky">
                             <tr>
                                 <th onClick={() => handleSort('client')} className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors group table-col-sticky table-header-sticky resizable-col min-w-[250px]">
                                     Client <SortIcon column="client" />
@@ -280,7 +280,7 @@ const Clients = () => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 text-slate-300">
+                        <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300">
                             {processedClients.map((client) => {
                                 const isWired = client.clientType === 'wired';
                                 const clientName = client.name || client.hostName || client.macAddress;
@@ -292,14 +292,14 @@ const Clients = () => {
                                     : (client.wirelessNetworkName || '-');
 
                                 return (
-                                    <tr key={client.id || client.macAddress} className="hover:bg-white/[0.02] transition-colors group border-b border-white/5 last:border-0 hover:-translate-y-0.5">
-                                        <td className="px-6 py-4 table-col-sticky border-r border-white/5 z-10 bg-slate-900 group-hover:bg-white/[0.03]">
+                                    <tr key={client.id || client.macAddress} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group border-b border-slate-100 dark:border-white/5 last:border-0 hover:-translate-y-0.5">
+                                        <td className="px-6 py-4 table-col-sticky border-r border-slate-100 dark:border-white/5 z-10 bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/[0.03]">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-blue-400 border border-white/5 group-hover:border-blue-500/30 transition-colors">
+                                                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-white/5 group-hover:border-blue-300 dark:group-hover:border-blue-500/30 transition-colors">
                                                     <Laptop size={18} />
                                                 </div>
                                                 <div>
-                                                    <div className="text-white font-bold tracking-tight text-sm truncate max-w-[180px]" title={clientName}>{clientName}</div>
+                                                    <div className="text-slate-800 dark:text-white font-bold tracking-tight text-sm truncate max-w-[180px]" title={clientName}>{clientName}</div>
                                                     <div className="text-[10px] text-slate-500 font-mono uppercase">{client.macAddress}</div>
                                                 </div>
                                             </div>
@@ -313,8 +313,8 @@ const Clients = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 rounded-full w-fit border border-white/5">
-                                                <Circle size={8} className={isUp ? "fill-emerald-500 text-emerald-500" : "text-slate-600"} />
+                                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-full w-fit border border-slate-200 dark:border-white/5">
+                                                <Circle size={8} className={isUp ? "fill-emerald-500 text-emerald-500" : "text-slate-400 dark:text-slate-600"} />
                                                 <span className="text-[10px] font-bold uppercase">{isUp ? 'Online' : 'Offline'}</span>
                                             </div>
                                         </td>
@@ -322,22 +322,22 @@ const Clients = () => {
                                             {formatDuration(client.connectionDurationInSeconds)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs font-bold text-slate-200">{networkDisplay}</div>
+                                            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{networkDisplay}</div>
                                             <div className="text-[10px] text-slate-500 italic mt-0.5">{formatInterface(client)}</div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2 text-xs font-bold">
                                                 {isWired ? <Globe size={14} className="text-emerald-500" /> : <Wifi size={14} className="text-blue-500" />}
-                                                <span>{isWired ? 'Wired' : 'Wireless'}</span>
+                                                <span className="text-slate-800 dark:text-slate-200">{isWired ? 'Wired' : 'Wireless'}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs font-black text-slate-200 font-mono">
+                                            <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">
                                                 {client.ipAddress || client.reservedIpAddress || '-'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="text-white font-black text-xs tracking-tighter">
+                                            <div className="text-slate-800 dark:text-white font-black text-xs tracking-tighter">
                                                 {formatBytes(client.downstreamDataTransferredInBytes || 0)}
                                             </div>
                                             <div className="text-[9px] text-slate-500 font-bold uppercase">Downstream</div>
@@ -347,7 +347,7 @@ const Clients = () => {
                             })}
                             {!loading && processedClients.length === 0 && (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-20 text-center text-slate-500 bg-black/10">
+                                    <td colSpan="8" className="px-6 py-20 text-center text-slate-500 bg-slate-50 dark:bg-black/10">
                                         <div className="flex flex-col items-center">
                                             <Users size={48} className="mb-4 opacity-5" />
                                             <p className="text-lg font-black text-slate-700 uppercase tracking-widest">No clients found</p>

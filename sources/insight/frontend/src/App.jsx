@@ -9,7 +9,7 @@ import Alerts from './pages/Dashboard/Alerts';
 import Clients from './pages/Dashboard/Clients';
 import Networks from './pages/Dashboard/Networks';
 import Applications from './pages/Dashboard/Applications';
-import Cloner from './pages/Cloner';
+import Configuration from './pages/Configuration';
 import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
@@ -126,7 +126,7 @@ function App() {
               <Route path="/networks" element={<Networks />} />
               <Route path="/devices" element={<Devices />} />
               <Route path="/applications" element={<Applications />} />
-              <Route path="/cloner" element={<Cloner />} />
+              <Route path="/configuration" element={<Configuration />} />
               <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>
           </MainLayout>

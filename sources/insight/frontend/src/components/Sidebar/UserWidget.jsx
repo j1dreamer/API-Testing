@@ -23,41 +23,41 @@ const UserWidget = ({ onLogout }) => {
     }, []);
 
     return (
-        <div className="relative border-t border-slate-800 bg-slate-900/50" ref={dropdownRef}>
+        <div className="relative border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50" ref={dropdownRef}>
             {/* Dropdown Menu */}
             {isOpen && (
                 <div className="absolute bottom-full left-0 w-full mb-2 px-2 animate-fade-in z-50">
-                    <div className="bg-slate-800 border border-slate-700 shadow-xl rounded-xl overflow-hidden py-1">
-                        <div className="px-4 py-3 border-b border-slate-700/50">
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl overflow-hidden py-1">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700/50">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Signed in as</p>
-                            <p className="text-xs font-bold text-white truncate" title={userEmail}>{userEmail}</p>
+                            <p className="text-xs font-bold text-slate-800 dark:text-white truncate" title={userEmail}>{userEmail}</p>
                         </div>
 
                         <div className="p-2">
                             <button
                                 onClick={toggleAutoRefresh}
-                                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-700/50 transition-colors group"
+                                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <Power size={14} className={isAutoRefreshEnabled ? 'text-emerald-400' : 'text-slate-500'} />
-                                    <span className="text-xs font-bold text-slate-300 group-hover:text-white">Auto-refresh (60s)</span>
+                                    <Power size={14} className={isAutoRefreshEnabled ? 'text-emerald-500 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'} />
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">Auto-refresh (60s)</span>
                                 </div>
-                                <div className={`w-8 h-4 rounded-full transition-colors relative ${isAutoRefreshEnabled ? 'bg-emerald-500/20' : 'bg-slate-700'}`}>
-                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${isAutoRefreshEnabled ? 'left-4 bg-emerald-400' : 'left-0.5 bg-slate-500'}`}></div>
+                                <div className={`w-8 h-4 rounded-full transition-colors relative ${isAutoRefreshEnabled ? 'bg-emerald-500/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full transition-all ${isAutoRefreshEnabled ? 'left-4 bg-emerald-500 dark:bg-emerald-400' : 'left-0.5 bg-slate-400 dark:bg-slate-500'}`}></div>
                                 </div>
                             </button>
                         </div>
 
-                        <div className="p-2 border-t border-slate-700/50">
+                        <div className="p-2 border-t border-slate-100 dark:border-slate-700/50">
                             <button
                                 onClick={() => {
                                     setIsOpen(false);
                                     onLogout();
                                 }}
-                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-rose-500/10 text-rose-400 transition-colors group"
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-500 dark:text-rose-400 transition-colors group"
                             >
-                                <LogOut size={14} className="group-hover:text-rose-300" />
-                                <span className="text-xs font-bold group-hover:text-rose-300">Log out</span>
+                                <LogOut size={14} className="group-hover:text-rose-600 dark:group-hover:text-rose-300" />
+                                <span className="text-xs font-bold group-hover:text-rose-600 dark:group-hover:text-rose-300">Log out</span>
                             </button>
                         </div>
                     </div>
@@ -67,20 +67,20 @@ const UserWidget = ({ onLogout }) => {
             {/* Widget Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-4 flex items-center gap-3 hover:bg-slate-800/50 transition-colors focus:outline-none group"
+                className="w-full p-4 flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors focus:outline-none group"
             >
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 border border-indigo-100 dark:border-indigo-500/30 flex items-center justify-center text-indigo-500 dark:text-indigo-400 shrink-0">
                     <User size={18} />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
-                    <div className="text-sm font-bold text-white truncate">{userEmail.split('@')[0]}</div>
+                    <div className="text-sm font-bold text-slate-800 dark:text-white truncate">{userEmail.split('@')[0]}</div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 truncate mt-0.5">
                         {currentSite}
                     </div>
                 </div>
                 <ChevronUp
                     size={16}
-                    className={`text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180 text-white' : ''}`}
+                    className={`text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180 text-slate-800 dark:text-white' : ''}`}
                 />
             </button>
         </div>

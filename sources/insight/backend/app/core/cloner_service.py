@@ -45,7 +45,8 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
                 for s in raw_elements:
                     standard_sites.append({
                         "siteId": s.get("id") or s.get("siteId"),
-                        "siteName": s.get("name") or s.get("siteName", "Unknown Site")
+                        "siteName": s.get("name") or s.get("siteName", "Unknown Site"),
+                        "role": s.get("userRoleOnSite")
                     })
                 return standard_sites
         except Exception as e:
@@ -278,6 +279,23 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
 
     results = []
     
+    # Pre-flight Permission Check
+    async with httpx.AsyncClient(verify=False) as client:
+        try:
+            site_check_url = f"https://portal.instant-on.hpe.com/api/sites/{target_site_id}"
+            res_check = await client.get(site_check_url, headers=headers, timeout=10.0)
+            
+            if res_check.status_code == 200:
+                site_data = res_check.json()
+                role = (site_data.get("userRoleOnSite") or "").lower()
+                if role not in ["administrator", "operator"]:
+                    print(f"[CLONER] Permission check failed. Role '{role}' is not 'administrator' or 'operator' for site {target_site_id}")
+                    return [{"status": "error", "message": f"Pre-flight check failed: You do not have 'administrator' or 'operator' role on this site (Current role is '{role}'). Clone blocked."}]
+            else:
+                print(f"[CLONER] Warning: Failed to verify site permissions ({res_check.status_code}). Proceeding anyway.")
+        except Exception as e:
+            print(f"[CLONER] Exception during permission check: {str(e)}")
+            
     # We will collect the guest portal settings from any SSID that has it embedded,
     # and execute it once at the end.
     guest_portal_settings = None
@@ -419,3 +437,294 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
                 results.append({"name": "Guest Portal Settings", "type": "GUEST_PORTAL", "status": "ERROR", "detail": str(e)})
     
     return results
+
+async def get_site_ssids(site_id: str) -> List[Dict[str, Any]]:
+    """Fetch only wireless networks for a site (for Smart Sync UI)"""
+    config = await fetch_site_config_live(site_id)
+    if "error" in config:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=config["error"])
+    
+    ssids = []
+    networks = config.get("networks", [])
+    if isinstance(networks, dict):
+        networks = networks.get("elements", [])
+        
+    for net in networks:
+        if net.get("isWireless"):
+            ssids.append({
+                "networkId": net.get("networkId") or net.get("id"),
+                "networkName": net.get("networkName", "Unnamed SSID"),
+                "security": net.get("security", "UNKNOWN"),
+                "isGuestPortalEnabled": net.get("isGuestPortalEnabled", False)
+            })
+    return ssids
+
+async def sync_ssids_passwords(source_network_name: str, new_password: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
+    """Find networks with source_network_name on target_site_ids and update their PSK"""
+    if not replay_service.ACTIVE_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session.")
+    
+    headers = {
+        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-us",
+        "X-ION-API-VERSION": "22",
+        "X-ION-CLIENT-TYPE": "InstantOn",
+        "X-ION-CLIENT-PLATFORM": "web",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        "Content-Type": "application/json"
+    }
+
+    import asyncio
+    results = []
+
+    async def update_site_ssid(client: httpx.AsyncClient, site_id: str):
+        # 1. Permission Check
+        site_check_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}"
+        try:
+            res_check = await client.get(site_check_url, headers=headers, timeout=10.0)
+            if res_check.status_code == 200:
+                site_data = res_check.json()
+                role = (site_data.get("userRoleOnSite") or "").lower()
+                if role not in ["administrator", "operator"]:
+                    return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Insufficient permissions ({role})"}
+            else:
+                 return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to verify permissions ({res_check.status_code})"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Permission check error: {str(e)}"}
+
+        # 2. Fetch Networks
+        nets_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
+        try:
+            res_nets = await client.get(nets_url, headers=headers, timeout=15.0)
+            if res_nets.status_code != 200:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to fetch networks ({res_nets.status_code})"}
+            
+            nets_data = res_nets.json()
+            networks = nets_data.get("elements", []) if isinstance(nets_data, dict) else nets_data
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Fetch networks error: {str(e)}"}
+
+        # 3. Find target SSID
+        target_net = next((n for n in networks if n.get("networkName") == source_network_name and n.get("isWireless")), None)
+        if not target_net:
+            return {"target": site_id, "name": source_network_name, "status": "SKIPPED", "detail": "SSID not found on this site"}
+
+        if target_net.get("isGuestPortalEnabled"):
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": "Cannot update password for Guest Portal SSIDs."}
+
+        # 4. Prepare and execute update
+        net_id = target_net.get("networkId") or target_net.get("id")
+        update_payload = target_net.copy()
+        
+        # Clean up restricted fields
+        for k in ["networkId", "siteId", "id", "kind", "wiredNetworkId", "accessPoints", "allowList"]:
+            update_payload.pop(k, None)
+
+        # Apply new password
+        update_payload["preSharedKey"] = new_password
+        if update_payload.get("security") == "OPEN":
+            update_payload["security"] = "WPA2_PSK"
+
+        update_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary/{net_id}"
+        
+        # Add referer for this specific put
+        put_headers = headers.copy()
+        put_headers["Referer"] = f"https://portal.instant-on.hpe.com/sites/{site_id}/networks/overview"
+        
+        try:
+            res_put = await client.put(update_url, headers=put_headers, json=update_payload, timeout=15.0)
+            if res_put.status_code in [200, 204]:
+                return {"target": site_id, "name": source_network_name, "status": "SUCCESS", "detail": "Password updated successfully"}
+            else:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update failed: {res_put.status_code} - {res_put.text[:200]}"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update request error: {str(e)}"}
+
+    async with httpx.AsyncClient(verify=False) as client:
+        tasks = [update_site_ssid(client, sid) for sid in target_site_ids]
+        exec_results = await asyncio.gather(*tasks)
+        
+    return list(exec_results)
+
+async def sync_ssids_config(source_site_id: str, source_network_name: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
+    """Deep clone an SSID config from a source site to matching SSIDs on multiple target sites"""
+    if not replay_service.ACTIVE_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session.")
+    
+    headers = {
+        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-us",
+        "X-ION-API-VERSION": "22",
+        "X-ION-CLIENT-TYPE": "InstantOn",
+        "X-ION-CLIENT-PLATFORM": "web",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        "Content-Type": "application/json"
+    }
+
+    import asyncio
+    results = []
+
+    # 1. Fetch source network config
+    async with httpx.AsyncClient(verify=False) as client:
+        source_nets_url = f"https://portal.instant-on.hpe.com/api/sites/{source_site_id}/networksSummary"
+        try:
+            res_src = await client.get(source_nets_url, headers=headers, timeout=15.0)
+            if res_src.status_code != 200:
+                raise Exception(f"Failed to fetch source networks ({res_src.status_code})")
+            nets_data = res_src.json()
+            source_networks = nets_data.get("elements", []) if isinstance(nets_data, dict) else nets_data
+        except Exception as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail=f"Source fetch error: {str(e)}")
+
+    source_net = next((n for n in source_networks if n.get("networkName") == source_network_name and n.get("isWireless")), None)
+    if not source_net:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"Source SSID '{source_network_name}' not found on source site {source_site_id}.")
+
+    # Clean the source payload so it is ready for PUT
+    base_put_payload = dict(source_net)
+    for k in ["networkId", "siteId", "id", "kind", "wiredNetworkId", "accessPoints", "allowList"]:
+        base_put_payload.pop(k, None)
+
+    async def update_site_ssid_config(client: httpx.AsyncClient, site_id: str):
+        # 1. Permission Check
+        site_check_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}"
+        try:
+            res_check = await client.get(site_check_url, headers=headers, timeout=10.0)
+            if res_check.status_code == 200:
+                site_data = res_check.json()
+                role = (site_data.get("userRoleOnSite") or "").lower()
+                if role not in ["administrator", "operator"]:
+                    return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Insufficient permissions ({role})"}
+            else:
+                 return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to verify permissions ({res_check.status_code})"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Permission check error: {str(e)}"}
+
+        # 2. Fetch Networks
+        nets_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
+        try:
+            res_nets = await client.get(nets_url, headers=headers, timeout=15.0)
+            if res_nets.status_code != 200:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to fetch networks ({res_nets.status_code})"}
+            
+            nets_data = res_nets.json()
+            networks = nets_data.get("elements", []) if isinstance(nets_data, dict) else nets_data
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Fetch networks error: {str(e)}"}
+
+        # 3. Find target SSID
+        target_net = next((n for n in networks if n.get("networkName") == source_network_name and n.get("isWireless")), None)
+        if not target_net:
+            return {"target": site_id, "name": source_network_name, "status": "SKIPPED", "detail": "SSID not found on this site"}
+
+        # 4. Prepare and execute update
+        net_id = target_net.get("networkId") or target_net.get("id")
+        
+        # Merge target-specific data back in if necessary? 
+        # Actually user wants deep config sync, so overwriting with source config is expected.
+        # But we MUST preserve the target's identity
+        update_payload = dict(base_put_payload)
+        
+        # Explicit modifications
+        update_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary/{net_id}"
+        
+        put_headers = headers.copy()
+        put_headers["Referer"] = f"https://portal.instant-on.hpe.com/sites/{site_id}/networks/overview"
+        
+        try:
+            res_put = await client.put(update_url, headers=put_headers, json=update_payload, timeout=15.0)
+            if res_put.status_code in [200, 204]:
+                return {"target": site_id, "name": source_network_name, "status": "SUCCESS", "detail": "Deep configuration synced"}
+            else:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update failed: {res_put.status_code} - {res_put.text[:200]}"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update request error: {str(e)}"}
+
+    async with httpx.AsyncClient(verify=False) as client:
+        tasks = [update_site_ssid_config(client, sid) for sid in target_site_ids]
+        exec_results = await asyncio.gather(*tasks)
+        
+    return list(exec_results)
+
+async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
+    """Find networks with source_network_name on target_site_ids and delete them"""
+    if not replay_service.ACTIVE_TOKEN:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No active session.")
+    
+    headers = {
+        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-us",
+        "X-ION-API-VERSION": "22",
+        "X-ION-CLIENT-TYPE": "InstantOn",
+        "X-ION-CLIENT-PLATFORM": "web",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
+        "Content-Type": "application/json"
+    }
+
+    import asyncio
+    results = []
+
+    async def delete_site_ssid(client: httpx.AsyncClient, site_id: str):
+        # 1. Permission Check
+        site_check_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}"
+        try:
+            res_check = await client.get(site_check_url, headers=headers, timeout=10.0)
+            if res_check.status_code == 200:
+                site_data = res_check.json()
+                role = (site_data.get("userRoleOnSite") or "").lower()
+                if role not in ["administrator", "operator"]:
+                    return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Insufficient permissions ({role})"}
+            else:
+                 return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to verify permissions ({res_check.status_code})"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Permission check error: {str(e)}"}
+
+        # 2. Fetch Networks
+        nets_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
+        try:
+            res_nets = await client.get(nets_url, headers=headers, timeout=15.0)
+            if res_nets.status_code != 200:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Failed to fetch networks ({res_nets.status_code})"}
+            
+            nets_data = res_nets.json()
+            networks = nets_data.get("elements", []) if isinstance(nets_data, dict) else nets_data
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Fetch networks error: {str(e)}"}
+
+        # 3. Find target SSID
+        target_net = next((n for n in networks if n.get("networkName") == source_network_name and n.get("isWireless")), None)
+        if not target_net:
+            return {"target": site_id, "name": source_network_name, "status": "SKIPPED", "detail": "SSID not found on this site"}
+
+        # 4. Prepare and execute delete
+        net_id = target_net.get("networkId") or target_net.get("id")
+        
+        delete_url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary/{net_id}"
+        
+        # Add referer for this specific put
+        del_headers = headers.copy()
+        del_headers["Referer"] = f"https://portal.instant-on.hpe.com/sites/{site_id}/networks/overview"
+        
+        try:
+            res_del = await client.delete(delete_url, headers=del_headers, timeout=15.0)
+            if res_del.status_code in [200, 204]:
+                return {"target": site_id, "name": source_network_name, "status": "SUCCESS", "detail": "SSID deleted successfully"}
+            else:
+                return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Delete failed: {res_del.status_code} - {res_del.text[:200]}"}
+        except Exception as e:
+            return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Delete request error: {str(e)}"}
+
+    async with httpx.AsyncClient(verify=False) as client:
+        tasks = [delete_site_ssid(client, sid) for sid in target_site_ids]
+        exec_results = await asyncio.gather(*tasks)
+        
+    return list(exec_results)

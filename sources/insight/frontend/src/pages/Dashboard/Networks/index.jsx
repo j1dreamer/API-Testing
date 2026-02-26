@@ -124,11 +124,11 @@ const Networks = () => {
     }, [networksData, searchTerm, typeFilter, sortConfig]);
 
     return (
-        <div className="p-8 pb-32 font-sans overflow-hidden bg-slate-950 min-h-screen">
+        <div className="p-8 pb-32 font-sans overflow-hidden">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white tracking-tight italic uppercase">Networks Dashboard</h1>
-                    <p className="text-sm text-slate-400 mt-1">
+                    <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight italic uppercase">Networks Dashboard</h1>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Hierarchical view for {sites.find(s => s.siteId === selectedSiteId)?.siteName || 'current site'}
                     </p>
                 </div>
@@ -147,7 +147,7 @@ const Networks = () => {
                         placeholder="Search Name or VLAN ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-14 pl-12 pr-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm focus:outline-none focus:border-indigo-500/50 shadow-inner transition-all hover:bg-slate-800/50"
+                        className="w-full h-14 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white text-sm focus:outline-none focus:border-indigo-500/50 shadow-inner transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50"
                     />
                 </div>
 
@@ -155,7 +155,7 @@ const Networks = () => {
                     <select
                         value={typeFilter}
                         onChange={(e) => setTypeFilter(e.target.value)}
-                        className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50 appearance-none min-w-[170px] cursor-pointer hover:bg-slate-800/50 transition-all shadow-xl"
+                        className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50 appearance-none min-w-[170px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all shadow-xl"
                     >
                         <option value="all">All Networks</option>
                         <option value="wired">Wired Only</option>

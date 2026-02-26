@@ -209,7 +209,7 @@ const Devices = () => {
                         placeholder="Search by name, model, or IP..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-14 pl-12 pr-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm focus:outline-none focus:border-purple-500/50 shadow-inner"
+                        className="w-full h-14 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white text-sm focus:outline-none focus:border-purple-500/50 shadow-inner"
                     />
                 </div>
 
@@ -217,7 +217,7 @@ const Devices = () => {
                     <select
                         value={typeFilter}
                         onChange={(e) => setTypeFilter(e.target.value)}
-                        className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-purple-500/50 appearance-none min-w-[150px]"
+                        className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-purple-500/50 appearance-none min-w-[150px]"
                     >
                         <option value="all">All Types</option>
                         <option value="accesspoint">Access Points</option>
@@ -227,7 +227,7 @@ const Devices = () => {
                     <select
                         value={healthFilter}
                         onChange={(e) => setHealthFilter(e.target.value)}
-                        className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-purple-500/50 appearance-none min-w-[150px]"
+                        className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-purple-500/50 appearance-none min-w-[150px]"
                     >
                         <option value="all">All Health</option>
                         <option value="good">Good</option>
@@ -244,10 +244,10 @@ const Devices = () => {
                 </div>
             )}
 
-            <div className="bg-slate-900 rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead className="bg-slate-800/40 text-slate-500 border-b border-white/5">
+                        <thead className="bg-slate-50 dark:bg-slate-800/40 text-slate-500 border-b border-slate-200 dark:border-white/5">
                             <tr>
                                 <th onClick={() => handleSort('name')} className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors group">
                                     Device <SortIcon column="name" />
@@ -268,7 +268,7 @@ const Devices = () => {
                                 <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] text-right">Clients</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5 text-slate-300">
+                        <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-slate-700 dark:text-slate-300">
                             {processedDevices.map((device) => {
                                 const hInfo = getHealthInfo(device);
                                 const iContent = getInterfaceContent(device);
@@ -276,20 +276,20 @@ const Devices = () => {
                                 const model = device.model || 'Unknown Model';
 
                                 return (
-                                    <tr key={device.id || device.macAddress} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr key={device.id || device.macAddress} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-purple-400 border border-white/5 group-hover:border-purple-500/30 transition-colors">
+                                                <div className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 border border-slate-200 dark:border-white/5 group-hover:border-purple-300 dark:group-hover:border-purple-500/30 transition-colors">
                                                     {getDeviceIcon(device)}
                                                 </div>
                                                 <div>
-                                                    <div className="text-white font-bold tracking-tight">{name}</div>
+                                                    <div className="text-slate-800 dark:text-white font-bold tracking-tight">{name}</div>
                                                     <div className="text-[10px] text-slate-500 font-mono uppercase truncate max-w-[150px]" title={device.macAddress}>{device.macAddress}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs font-bold text-slate-200">{device.deviceType === 'accesspoint' ? 'Access Point' : 'Switch'}</div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{device.deviceType === 'accesspoint' ? 'Access Point' : 'Switch'}</div>
                                             <div className="text-[10px] text-slate-500 font-mono mt-0.5">{model}</div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -304,17 +304,17 @@ const Devices = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs font-black text-slate-200 font-mono">{device.ipAddress || '-'}</div>
+                                            <div className="text-xs font-black text-slate-800 dark:text-slate-200 font-mono">{device.ipAddress || '-'}</div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-xs font-bold text-slate-200">{iContent.main}</div>
+                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-200">{iContent.main}</div>
                                             <div className="text-[10px] text-slate-500 italic mt-0.5">{iContent.sub}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-400">
+                                        <td className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-slate-400">
                                             {formatUptime(device.uptimeInSeconds)}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="text-white font-black text-xs">
+                                            <div className="text-slate-800 dark:text-white font-black text-xs">
                                                 {device.connectedClients || device.wiredClientsCount || 0}
                                             </div>
                                             <div className="text-[8px] text-slate-500 font-bold uppercase">Connected</div>
@@ -324,7 +324,7 @@ const Devices = () => {
                             })}
                             {!loading && processedDevices.length === 0 && (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-20 text-center text-slate-500 bg-black/10">
+                                    <td colSpan="7" className="px-6 py-20 text-center text-slate-500 bg-slate-50 dark:bg-black/10">
                                         <div className="flex flex-col items-center">
                                             <HardDrive size={48} className="mb-4 opacity-5" />
                                             <p className="text-lg font-black text-slate-700 uppercase tracking-widest">No devices found</p>

@@ -6,7 +6,9 @@ from app.core.cloner_service import (
     fetch_site_config_live,
     fetch_site_config, 
     apply_config_to_site,
-    apply_config_live
+    apply_config_live,
+    get_site_ssids,
+    sync_ssids_passwords
 )
 from app.core.replay_service import replay_login
 
@@ -109,4 +111,58 @@ async def execute_clone(
     return {
         "status": "success",
         "results": batch_report
+    }
+
+@router.get("/sites/{site_id}/ssids")
+async def fetch_site_ssids_api(site_id: str):
+    """Get list of wireless networks for a site"""
+    return await get_site_ssids(site_id)
+
+@router.post("/sync-password")
+async def execute_password_sync(
+    source_network_name: str = Body(...),
+    new_password: str = Body(...),
+    target_site_ids: List[str] = Body(...)
+):
+    """Batch update password for matching SSIDs"""
+    if not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target site IDs provided.")
+    
+    results = await sync_ssids_passwords(source_network_name, new_password, target_site_ids)
+    return {
+        "status": "success",
+        "results": results
+    }
+
+@router.post("/sync-config")
+async def execute_config_sync(
+    source_site_id: str = Body(...),
+    source_network_name: str = Body(...),
+    target_site_ids: List[str] = Body(...)
+):
+    """Batch deep sync configuration for matching SSIDs from a source site"""
+    from app.core import cloner_service
+    if not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target site IDs provided.")
+    
+    results = await cloner_service.sync_ssids_config(source_site_id, source_network_name, target_site_ids)
+    return {
+        "status": "success",
+        "results": results
+    }
+
+@router.post("/sync-delete")
+async def execute_delete_sync(
+    source_network_name: str = Body(...),
+    target_site_ids: List[str] = Body(...)
+):
+    """Batch delete matching SSIDs across target sites"""
+    from app.core import cloner_service
+    if not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target site IDs provided.")
+    
+    results = await cloner_service.sync_ssids_delete(source_network_name, target_site_ids)
+    return {
+        "status": "success",
+        "results": results
     }
