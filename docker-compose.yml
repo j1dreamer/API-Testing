@@ -9,6 +9,8 @@ services:
       - "27018:27017"
     volumes:
       - insight_db_data:/data/db
+    networks:
+      - insight-net
 
   backend:
     build: 
@@ -24,6 +26,8 @@ services:
       - "3003:8001"
     depends_on:
       - database
+    networks:
+      - insight-net
 
   frontend:
     build:
@@ -35,6 +39,12 @@ services:
       - "3002:80"
     depends_on:
       - backend
+    networks:
+      - insight-net
+
+networks:
+  insight-net:
+    driver: bridge
 
 volumes:
   insight_db_data:
