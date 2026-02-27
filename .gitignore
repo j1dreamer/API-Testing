@@ -21,3 +21,5 @@ __pycache__/
 *.pyc
 .idea/
 .vscode/
+/sources/capture-toolkit/
+/sources/capture-toolkit/
