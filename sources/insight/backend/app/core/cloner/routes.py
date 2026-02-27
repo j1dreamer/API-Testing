@@ -39,9 +39,19 @@ async def cloner_auth_session(response: Response):
     
     from app.core import replay_service
     if replay_service.ACTIVE_TOKEN:
+        role = "guest"
+        try:
+            from app.database.auth_crud import get_user_by_email
+            user = await get_user_by_email(replay_service.ACTIVE_USER_EMAIL)
+            if user:
+                role = user.get("role", "guest")
+        except Exception:
+            pass
+            
         return {
             "token_value": replay_service.ACTIVE_TOKEN.get("access_token"),
-            "expires_in": replay_service.ACTIVE_TOKEN.get("expires_in")
+            "expires_in": replay_service.ACTIVE_TOKEN.get("expires_in"),
+            "role": role
         }
     return {"token_value": None}
 
@@ -57,10 +67,22 @@ async def cloner_login(
         
     try:
         from app.core.replay_service import replay_login
+        import app.core.replay_service as rs
         token = await replay_login(username, password)
         if token.get("status") == "error":
             raise HTTPException(status_code=401, detail=token.get("message", "Login failed"))
-        return {"status": "success", "token_type": "Bearer", "expires_in": token.get("expires_in")}
+        rs.ACTIVE_USER_EMAIL = username
+        
+        role = "guest"
+        try:
+            from app.database.auth_crud import get_user_by_email
+            user = await get_user_by_email(username)
+            if user:
+                role = user.get("role", "guest")
+        except Exception:
+            pass
+            
+        return {"status": "success", "token_type": "Bearer", "expires_in": token.get("expires_in"), "role": role}
     except HTTPException:
         raise
     except Exception as e:
@@ -72,6 +94,7 @@ async def cloner_logout():
     from app.core import replay_service
     from app.database.crud import delete_all_auth_sessions
     replay_service.ACTIVE_TOKEN = None
+    replay_service.ACTIVE_USER_EMAIL = None
     await delete_all_auth_sessions()
     return {"status": "success"}
 

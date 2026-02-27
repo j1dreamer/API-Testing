@@ -7,8 +7,10 @@ from app.database.crud import upsert_auth_session
 from app.database.connection import get_database
 
 # In-memory token store
+# In-memory token store
 # Format: { "access_token": "...", "expires_at": datetime }
 ACTIVE_TOKEN: Optional[Dict[str, Any]] = None
+ACTIVE_USER_EMAIL: Optional[str] = None
 
 async def replay_login(username: str, password: str, client_id: Optional[str] = None) -> dict:
     """
@@ -335,7 +337,8 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
     Inject Authorization: Bearer <token>
     """
     global ACTIVE_TOKEN
-    
+    global ACTIVE_USER_EMAIL
+
     if not ACTIVE_TOKEN:
         raise HTTPException(status_code=401, detail="No active session. Call /replay/login first.")
         
@@ -398,6 +401,7 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
             if response.status_code in [401, 403]:
                 print(f"[REPLAY PROXY] Received {response.status_code} from Aruba. Invalidating local session.")
                 ACTIVE_TOKEN = None
+                ACTIVE_USER_EMAIL = None
                 from app.database.crud import delete_all_auth_sessions
                 await delete_all_auth_sessions()
             

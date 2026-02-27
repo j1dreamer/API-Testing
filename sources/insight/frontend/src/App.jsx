@@ -10,6 +10,7 @@ import Clients from './pages/Dashboard/Clients';
 import Networks from './pages/Dashboard/Networks';
 import Applications from './pages/Dashboard/Applications';
 import Configuration from './pages/Configuration';
+import AdminLogs from './pages/Admin/Logs';
 import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
@@ -33,11 +34,14 @@ function App() {
         const res = await apiClient.get('/cloner/auth-session');
         if (res.data && res.data.token_value) {
           setIsLoggedIn(true);
+          sessionStorage.setItem('userRole', res.data.role || 'guest');
         } else {
           sessionStorage.removeItem('token');
+          sessionStorage.removeItem('userRole');
         }
       } catch (error) {
         sessionStorage.removeItem('token');
+        sessionStorage.removeItem('userRole');
       } finally {
         setCheckingAuth(false);
         setIsReady(true);
@@ -127,6 +131,7 @@ function App() {
               <Route path="/devices" element={<Devices />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/configuration" element={<Configuration />} />
+              <Route path="/admin/logs" element={<AdminLogs />} />
               <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>
           </MainLayout>

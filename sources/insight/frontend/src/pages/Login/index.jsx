@@ -18,11 +18,14 @@ const Login = ({ onLoginSuccess }) => {
                 const res = await apiClient.get('/cloner/auth-session');
                 if (res.data && res.data.token_value) {
                     sessionStorage.setItem('token', res.data.token_value);
+                    sessionStorage.setItem('userRole', res.data.role || 'guest');
                     onLoginSuccess();
                 } else {
+                    sessionStorage.removeItem('userRole');
                     setCheckingAuth(false);
                 }
             } catch (error) {
+                sessionStorage.removeItem('userRole');
                 setCheckingAuth(false);
             }
         };
@@ -36,7 +39,8 @@ const Login = ({ onLoginSuccess }) => {
 
         try {
             const res = await apiClient.post('/cloner/login', { username, password });
-            sessionStorage.setItem('token', res.data?.token_value || 'aruba_session');
+            sessionStorage.setItem('token', res.data?.token_value || res.data?.access_token || 'aruba_session');
+            sessionStorage.setItem('userRole', res.data?.role || 'guest');
             sessionStorage.setItem('insight_user_email', username);
 
             // Do not setLoading(false) here, let it spin until unmount

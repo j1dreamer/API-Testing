@@ -1,7 +1,7 @@
 """Pydantic models for the Aruba API capture system."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 
 # ===== INPUT MODELS (from Extension) =====
@@ -148,3 +148,34 @@ class AuthSessionResponse(BaseModel):
     source_url: str = ""
     captured_at: Optional[str] = None
     headers_snapshot: Dict[str, str] = Field(default_factory=dict)
+
+# ===== NEW AUTH & LOGGING MODELS =====
+
+class UserDocument(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    email: str
+    role: str = Field("guest", description="admin, user, or guest")
+    isApproved: bool = Field(False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AuditLogDocument(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    actor_email: Optional[str] = None
+    method: str
+    endpoint: str
+    payload: Optional[Dict[str, Any]] = None
+    ip_address: Optional[str] = None
+    statusCode: int = 0
+    action: Optional[str] = None
+
+class LogResponse(BaseModel):
+    id: str
+    timestamp: str  # Will be formatted in GMT+7
+    actor_email: Optional[str]
+    method: str
+    endpoint: str
+    payload: Optional[Dict[str, Any]]
+    ip_address: Optional[str]
+    statusCode: int
+    action: Optional[str]

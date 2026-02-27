@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Activity, Bell, Users, Wifi, Monitor, Box, Sliders } from 'lucide-react';
+import { Home, Activity, Bell, Users, Wifi, Monitor, Box, Sliders, Shield } from 'lucide-react';
 import UserWidget from './UserWidget';
 import ThemeLanguageToggle from '../ThemeLanguageToggle';
 import { useLanguage } from '../../context/LanguageContext';
@@ -13,6 +13,8 @@ const Sidebar = ({ onLogout }) => {
             ? "bg-blue-600 text-white"
             : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-gray-300 dark:hover:bg-slate-800 dark:hover:text-white"
         }`;
+
+    const userRole = sessionStorage.getItem('userRole') || 'guest';
 
     return (
         <div className="flex flex-col w-64 bg-white dark:bg-[#0F172A] border-r border-slate-200 dark:border-slate-800 h-full transition-colors duration-300">
@@ -34,6 +36,9 @@ const Sidebar = ({ onLogout }) => {
                 <NavLink to="/devices" className={getNavLinkClass}><Monitor className="w-5 h-5 mr-3" /> Devices</NavLink>
                 <NavLink to="/applications" className={getNavLinkClass}><Box className="w-5 h-5 mr-3" /> Applications</NavLink>
                 <NavLink to="/configuration" className={getNavLinkClass}><Sliders className="w-5 h-5 mr-3" /> Configuration</NavLink>
+                {userRole === 'admin' && (
+                    <NavLink to="/admin/logs" className={getNavLinkClass}><Shield className="w-5 h-5 mr-3" /> Admin Logs</NavLink>
+                )}
             </nav>
             <div className="p-4 border-t border-slate-200 dark:border-slate-800">
                 <ThemeLanguageToggle />

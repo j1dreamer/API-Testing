@@ -32,6 +32,11 @@ async def connect_to_mongo():
     await db.auth_sessions.create_index("captured_at")
     await db.auth_sessions.create_index("token_type")
 
+    # === Users and Audit Logs ===
+    await db.users.create_index("email", unique=True)
+    # TTL Index: Expire after 90 days (7776000 seconds)
+    await db.audit_logs.create_index("timestamp", expireAfterSeconds=7776000)
+
 
 async def close_mongo_connection():
     """Close MongoDB connection."""
