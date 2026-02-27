@@ -1,17 +1,6 @@
 version: '3.8'
 
 services:
-  database:
-    image: mongo:6
-    container_name: insight_mongo
-    restart: unless-stopped
-    ports:
-      - "27018:27017"
-    volumes:
-      - insight_db_data:/data/db
-    networks:
-      - insight-net
-
   backend:
     build: 
       context: ./sources/insight/backend
@@ -19,13 +8,13 @@ services:
     container_name: insight_backend
     restart: unless-stopped
     environment:
-      - MONGODB_URL=mongodb://database:27017
+      - MONGODB_URL=mongodb://host.docker.internal:27018
       - DATABASE_NAME=insight
       - SUPER_ADMIN_EMAILS=cuong.nguyen@aitc-jsc.com
     ports:
       - "3003:8001"
-    depends_on:
-      - database
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - insight-net
 
@@ -45,6 +34,3 @@ services:
 networks:
   insight-net:
     driver: bridge
-
-volumes:
-  insight_db_data:
