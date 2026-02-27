@@ -318,6 +318,7 @@ async def clear_all_data() -> dict:
 async def upsert_auth_session(
     token_type: str,
     token_value: str,
+    email: Optional[str] = None,
     refresh_token: Optional[str] = None,
     expires_in: Optional[int] = None,
     source_url: str = "",
@@ -330,6 +331,7 @@ async def upsert_auth_session(
     doc = {
         "token_type": token_type,
         "token_value": token_value,
+        "email": email,
         "refresh_token": refresh_token,
         "expires_in": expires_in,
         "source_url": source_url,
@@ -337,9 +339,9 @@ async def upsert_auth_session(
         "captured_at": now,
     }
 
-    # Update if same token_type exists, otherwise insert
+    # Use token_value as the unique key to prevent shared session overwrites
     result = await db.auth_sessions.update_one(
-        {"token_type": token_type},
+        {"token_value": token_value},
         {"$set": doc},
         upsert=True,
     )
@@ -379,6 +381,12 @@ async def delete_auth_session(token_type: str):
     """Delete a specific auth session by type."""
     db = get_database()
     await db.auth_sessions.delete_many({"token_type": token_type})
+
+
+async def delete_auth_session_by_token(token_value: str):
+    """Delete a specific auth session by its token value."""
+    db = get_database()
+    await db.auth_sessions.delete_many({"token_value": token_value})
 
 
 # ===== AUTH BLUEPRINT CRUD =====

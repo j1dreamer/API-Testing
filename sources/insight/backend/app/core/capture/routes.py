@@ -124,11 +124,22 @@ async def capture_auth_session(data: AuthSessionPayload):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/auth-session")
-async def get_auth_session():
-    """Retrieve the current active authentication session."""
-    from app.core.replay_service import ACTIVE_TOKEN
-    if ACTIVE_TOKEN:
-        return ACTIVE_TOKEN
+async def get_auth_session(request: Request):
+    """Retrieve the current active authentication session based on the request token."""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return {"token_value": None}
+    
+    token = auth_header.split(" ")[1]
+    from app.database.connection import get_database
+    db = get_database()
+    session = await db.auth_sessions.find_one({"token_value": token})
+    
+    if session:
+        return {
+            "token_value": session.get("token_value"),
+            "expires_in": session.get("expires_in")
+        }
     return {"token_value": None}
 
 @router.post("/api/capture-blueprint", status_code=status.HTTP_201_CREATED)

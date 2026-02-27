@@ -3,7 +3,7 @@ from app.services.aruba import aruba_service
 from app.schemas.device import DeviceResponse, DeviceStatus, DeviceType
 
 class InventoryService:
-    async def get_site_devices(self, site_id: str) -> List[DeviceResponse]:
+    async def get_site_devices(self, site_id: str, aruba_token: str) -> List[DeviceResponse]:
         """
         Fetches raw device inventory from Aruba and transforms it into
         the Safe internal schema (Data Scrubbing).
@@ -12,7 +12,7 @@ class InventoryService:
         
         try:
             # 1. Fetch Raw Data using the Proxy/Adapter Service
-            response = await aruba_service.call_api("GET", endpoint)
+            response = await aruba_service.call_api("GET", endpoint, aruba_token=aruba_token)
             
             if response.status_code != 200:
                 print(f"[INVENTORY] Failed to fetch devices: {response.status_code}")

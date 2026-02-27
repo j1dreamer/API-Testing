@@ -1,16 +1,26 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from typing import Dict, Any, List
 from app.database.auth_crud import get_user_by_email
 
-async def get_current_user() -> Dict[str, Any]:
-    from app.core import replay_service
-    # If no active Aruba session, we are unauthenticated
-    if not replay_service.ACTIVE_TOKEN:
-        raise HTTPException(status_code=401, detail="No active session. Please login first.")
+async def get_current_user(request: Request) -> Dict[str, Any]:
+    # Extract token from header
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Header Authorization không hợp lệ.")
     
-    email = getattr(replay_service, "ACTIVE_USER_EMAIL", None)
+    token = auth_header.split(" ")[1]
+    
+    # Find the session in DB to get the email associated with this specific token
+    from app.database.connection import get_database
+    db = get_database()
+    session = await db.auth_sessions.find_one({"token_value": token})
+    
+    if not session:
+        raise HTTPException(status_code=401, detail="Phiên làm việc không tồn tại hoặc đã hết hạn.")
+
+    email = session.get("email")
     if not email:
-        raise HTTPException(status_code=401, detail="Session email not found.")
+        raise HTTPException(status_code=401, detail="Không thể xác định tài khoản từ phiên này.")
 
     user = await get_user_by_email(email)
     if user is None:

@@ -37,10 +37,19 @@ class GlobalLoggingMiddleware(BaseHTTPMiddleware):
         if not is_config_action:
             return await call_next(request)
 
-        # 1. Try to identify actor from in-memory session
-        actor_email = getattr(replay_service, "ACTIVE_USER_EMAIL", "anonymous")
-        if not actor_email:
-            actor_email = "anonymous"
+        # 1. Try to identify actor from Request Token
+        auth_header = request.headers.get("Authorization")
+        actor_email = "anonymous"
+        if auth_header and auth_header.startswith("Bearer "):
+            try:
+                token = auth_header.split(" ")[1]
+                from app.database.connection import get_database
+                db = get_database()
+                session = await db.auth_sessions.find_one({"token_value": token})
+                if session and session.get("email"):
+                    actor_email = session.get("email")
+            except Exception:
+                pass
 
         # 2. Extract basic info
         method = request.method

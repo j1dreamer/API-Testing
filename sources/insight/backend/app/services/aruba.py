@@ -15,55 +15,18 @@ class ArubaService:
     def __init__(self):
         self.session_cookies: Dict[str, str] = {}
 
-    async def _get_auth_headers_and_cookies(self) -> (Dict[str, str], Dict[str, str]):
-        """
-        Retrieves the latest authentication tokens from the database and merges them 
-        with any in-memory session cookies.
-        """
+    async def _get_auth_headers(self, aruba_token: Optional[str]) -> Dict[str, str]:
+        """Prepare headers based on the provided token."""
         headers = {}
-        cookies = self.session_cookies.copy()
-
-        # Load from Database (Baseline)
-        all_sessions = await get_all_auth_sessions()
-        latest_bearer = next((s for s in all_sessions if s.get("token_type") == "bearer"), None)
-
-        if latest_bearer:
-            # Inject Bearer Token
-            token_val = latest_bearer.get("token_value")
-            if token_val:
-                headers["Authorization"] = f"Bearer {token_val}"
-
-            # Inject CSRF Token
-            snapshot = latest_bearer.get("headers_snapshot", {})
-            csrf_val = None
-            
-            # Check dedicated sessions
-            csrf_session = next((s for s in all_sessions if s.get("token_type") == "csrf"), None)
-            if csrf_session:
-                csrf_val = csrf_session.get("token_value")
-            
-            # Check snapshot
-            if not csrf_val:
-                for k, v in snapshot.items():
-                    if k.lower() in ["x-csrf-token", "x-xsrf-token", "csrf-token"]:
-                        csrf_val = v
-                        break
-            if csrf_val:
-                headers["X-CSRF-Token"] = csrf_val
-
-            # Load snapshot cookies
-            if "Cookie" in snapshot:
-                for item in snapshot["Cookie"].split(";"):
-                    if "=" in item:
-                        k, v = item.split("=", 1)
-                        cookies[k.strip()] = v.strip()
-
-        return headers, cookies
+        if aruba_token:
+            headers["Authorization"] = f"Bearer {aruba_token}"
+        return headers
 
     async def call_api(
         self, 
         method: str, 
         endpoint: str, 
+        aruba_token: Optional[str] = None,
         data: Any = None, 
         json_data: Any = None,
         headers: Optional[Dict[str, str]] = None,
@@ -79,7 +42,7 @@ class ArubaService:
             url = endpoint
         
         # Prepare Auth
-        auth_headers, auth_cookies = await self._get_auth_headers_and_cookies()
+        auth_headers = await self._get_auth_headers(aruba_token)
         
         # Prepare Request Headers
         final_headers = {
@@ -109,8 +72,7 @@ class ArubaService:
         async with httpx.AsyncClient(
             timeout=30.0,
             follow_redirects=True,
-            verify=False,
-            cookies=auth_cookies
+            verify=False
         ) as client:
             resp = await client.request(
                 method=method,
@@ -120,17 +82,9 @@ class ArubaService:
                 json=json_data
             )
             
-            # If we get unauthorized, clear the DB sessions so we don't keep trying dead tokens
+            # If we get unauthorized
             if resp.status_code in [401, 403]:
-                print(f"[ARUBA SERVICE] Received {resp.status_code}. Clearing stored auth sessions.")
-                await delete_all_auth_sessions()
-                from app.core import replay_service
-                replay_service.ACTIVE_TOKEN = None
-
-            # Update session cookies from response
-            if resp.cookies:
-                for cookie in resp.cookies.jar:
-                    self.session_cookies[cookie.name] = cookie.value
+                print(f"[ARUBA SERVICE] Received {resp.status_code}. Token might be expired.")
             
             return resp
 

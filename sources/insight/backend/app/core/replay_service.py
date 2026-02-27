@@ -6,11 +6,7 @@ from fastapi import HTTPException, Request
 from app.database.crud import upsert_auth_session
 from app.database.connection import get_database
 
-# In-memory token store
-# In-memory token store
-# Format: { "access_token": "...", "expires_at": datetime }
-ACTIVE_TOKEN: Optional[Dict[str, Any]] = None
-ACTIVE_USER_EMAIL: Optional[str] = None
+# Stateless session management. Session tokens are passed in request headers.
 
 async def replay_login(username: str, password: str, client_id: Optional[str] = None) -> dict:
     """
@@ -264,22 +260,16 @@ async def replay_login(username: str, password: str, client_id: Optional[str] = 
                 expires_in = final_data.get("expires_in", 1799)
                 
                 if final_token:
-                    # Store globally
-                    ACTIVE_TOKEN = {
-                        "access_token": final_token,
-                        "expires_at": datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-                    }
-                    
-                    # Persistence to DB
                     await upsert_auth_session(
                         token_type="bearer",
                         token_value=final_token,
+                        email=username,
                         expires_in=expires_in,
                         source_url=exchange_url,
                         headers_snapshot=exchange_headers
                     )
                     
-                    print(f"[REPLAY] Full Auth Success! Portal Token valid for {expires_in}s")
+                    print(f"[REPLAY] SSO Login success for {username}.")
                     
                     # --- PHASE 4: Context Discovery (Get Sites/Customer ID) ---
                     customer_id = None
@@ -334,18 +324,13 @@ async def replay_login(username: str, password: str, client_id: Optional[str] = 
 async def proxy_api_call(path: str, method: str, original_request: Request):
     """
     Proxy to target domain (default sso.arubainstanton.com)
-    Inject Authorization: Bearer <token>
+    Extracts Bearer token from the incoming request's Authorization header.
     """
-    global ACTIVE_TOKEN
-    global ACTIVE_USER_EMAIL
-
-    if not ACTIVE_TOKEN:
-        raise HTTPException(status_code=401, detail="No active session. Call /replay/login first.")
-        
-    # Check expiry
-    if datetime.now(timezone.utc) > ACTIVE_TOKEN["expires_at"]:
-        ACTIVE_TOKEN = None
-        raise HTTPException(status_code=401, detail="Token expired. Please login again.")
+    auth_header = original_request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing or invalid Authorization header.")
+    
+    access_token = auth_header.split(" ")[1]
     
     # Extract domain from query params or use default
     domain = original_request.query_params.get("domain", "sso.arubainstanton.com")
@@ -365,7 +350,7 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
     filtered_headers = {k: v for k, v in headers.items() if k.lower() not in skip_req_headers}
     
     # Inject Token & Spoofing
-    filtered_headers["Authorization"] = f"Bearer {ACTIVE_TOKEN['access_token']}"
+    filtered_headers["Authorization"] = f"Bearer {access_token}"
     filtered_headers["Host"] = domain
     filtered_headers["Origin"] = f"https://{domain}"
     filtered_headers["Referer"] = f"https://{domain}/"
@@ -397,13 +382,9 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
                 follow_redirects=True
             )
             
-            # If backend receives 401 from Aruba, clear the local active token session
+            # If backend receives 401 from Aruba
             if response.status_code in [401, 403]:
-                print(f"[REPLAY PROXY] Received {response.status_code} from Aruba. Invalidating local session.")
-                ACTIVE_TOKEN = None
-                ACTIVE_USER_EMAIL = None
-                from app.database.crud import delete_all_auth_sessions
-                await delete_all_auth_sessions()
+                print(f"[REPLAY PROXY] Received {response.status_code} from Aruba. Token invalid.")
             
             # Prepare response headers (filter out sensitive ones)
             skip_resp_headers = {

@@ -5,15 +5,10 @@ from datetime import datetime
 from app.database.connection import get_database
 from app.core import replay_service
 
-async def get_live_account_sites() -> List[Dict[str, Any]]:
-    """Fetch all live sites for the currently logged-in account (active session)."""
-    if not replay_service.ACTIVE_TOKEN:
-        print("[CLONER] No active token found in replay_service")
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session. Please login.")
-    
+async def get_live_account_sites(aruba_token: str) -> List[Dict[str, Any]]:
+    """Fetch all live sites for the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "X-ION-API-VERSION": "22",
         "X-ION-CLIENT-TYPE": "InstantOn",
@@ -29,12 +24,9 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
         try:
             res = await client.get("https://portal.instant-on.hpe.com/api/sites", headers=headers, timeout=10.0)
             if res.status_code in [401, 403]:
-                print(f"[CLONER] Live sites fetch received {res.status_code}, clearing backend session and forcing 401")
-                replay_service.ACTIVE_TOKEN = None
-                from app.database.crud import delete_all_auth_sessions
-                await delete_all_auth_sessions()
+                print(f"[CLONER] Live sites fetch received {res.status_code}")
                 from fastapi import HTTPException
-                raise HTTPException(status_code=401, detail="Session expired or invalid.")
+                raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
                 
             if res.status_code == 200:
                 data = res.json()
@@ -56,15 +48,10 @@ async def get_live_account_sites() -> List[Dict[str, Any]]:
                 raise e
     return []
 
-async def fetch_site_config_live(site_id: str) -> Dict[str, Any]:
-    """Fetch live wired/wireless configuration for a site using the active session."""
-    from app.core import replay_service
-    if not replay_service.ACTIVE_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session for live config fetch.")
-    
+async def fetch_site_config_live(site_id: str, aruba_token: str) -> Dict[str, Any]:
+    """Fetch live wired/wireless configuration for a site using the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "X-ION-API-VERSION": "22",
         "X-ION-CLIENT-TYPE": "InstantOn",
@@ -79,12 +66,9 @@ async def fetch_site_config_live(site_id: str) -> Dict[str, Any]:
             res_nets = await client.get(url_nets, headers=headers, timeout=10.0)
             
             if res_nets.status_code in [401, 403]:
-                print(f"[CLONER] Live config fetch received {res_nets.status_code}, clearing backend session")
-                replay_service.ACTIVE_TOKEN = None
-                from app.database.crud import delete_all_auth_sessions
-                await delete_all_auth_sessions()
+                print(f"[CLONER] Live config fetch received {res_nets.status_code}")
                 from fastapi import HTTPException
-                raise HTTPException(status_code=401, detail="Session expired or invalid.")
+                raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
                 
             # Fetch guest portal settings (site-level)
             url_guest = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/guestPortalSettings"
@@ -256,17 +240,10 @@ async def apply_config_to_site(target_site_id: str, config: Dict[str, Any]):
             
     return operations
 
-async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Actually push network configurations to the target site using a two-pass approach:
-    1. POST (Create): Minimal/Clean payload matching the user's successful cURL pattern.
-    2. PUT (Update): Full payload with all advanced settings.
-    """
-    if not replay_service.ACTIVE_TOKEN:
-        return [{"status": "error", "message": "No active session."}]
-    
+async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]], aruba_token: str) -> List[Dict[str, Any]]:
+    """Push configuration using the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-us",
         "X-ION-API-VERSION": "22",
@@ -438,9 +415,9 @@ async def apply_config_live(target_site_id: str, operations: List[Dict[str, Any]
     
     return results
 
-async def get_site_ssids(site_id: str) -> List[Dict[str, Any]]:
-    """Fetch only wireless networks for a site (for Smart Sync UI)"""
-    config = await fetch_site_config_live(site_id)
+async def get_site_ssids(site_id: str, aruba_token: str) -> List[Dict[str, Any]]:
+    """Fetch only wireless networks for a site"""
+    config = await fetch_site_config_live(site_id, aruba_token)
     if "error" in config:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=config["error"])
@@ -460,14 +437,10 @@ async def get_site_ssids(site_id: str) -> List[Dict[str, Any]]:
             })
     return ssids
 
-async def sync_ssids_passwords(source_network_name: str, new_password: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
+async def sync_ssids_passwords(source_network_name: str, new_password: str, target_site_ids: List[str], aruba_token: str) -> List[Dict[str, Any]]:
     """Find networks with source_network_name on target_site_ids and update their PSK"""
-    if not replay_service.ACTIVE_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session.")
-    
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-us",
         "X-ION-API-VERSION": "22",
@@ -549,14 +522,10 @@ async def sync_ssids_passwords(source_network_name: str, new_password: str, targ
         
     return list(exec_results)
 
-async def sync_ssids_config(source_site_id: str, source_network_name: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
-    """Deep clone an SSID config from a source site to matching SSIDs on multiple target sites"""
-    if not replay_service.ACTIVE_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session.")
-    
+async def sync_ssids_config(source_site_id: str, source_network_name: str, target_site_ids: List[str], aruba_token: str) -> List[Dict[str, Any]]:
+    """Deep clone an SSID config using the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-us",
         "X-ION-API-VERSION": "22",
@@ -653,14 +622,10 @@ async def sync_ssids_config(source_site_id: str, source_network_name: str, targe
         
     return list(exec_results)
 
-async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str]) -> List[Dict[str, Any]]:
-    """Find networks with source_network_name on target_site_ids and delete them"""
-    if not replay_service.ACTIVE_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session.")
-    
+async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str], aruba_token: str) -> List[Dict[str, Any]]:
+    """Find and delete SSIDs using the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-us",
         "X-ION-API-VERSION": "22",
@@ -735,15 +700,12 @@ async def sync_ssids_create(
     security: str, 
     password: str, 
     advanced_options: Dict[str, Any],
-    target_site_ids: List[str]
+    target_site_ids: List[str],
+    aruba_token: str
 ) -> List[Dict[str, Any]]:
-    """Create a new SSID on multiple target sites utilizing a two pass POST+PUT technique"""
-    if not replay_service.ACTIVE_TOKEN:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=401, detail="No active session.")
-    
+    """Create a new SSID using the provided token."""
     headers = {
-        "Authorization": f"Bearer {replay_service.ACTIVE_TOKEN['access_token']}",
+        "Authorization": f"Bearer {aruba_token}",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-us",
         "X-ION-API-VERSION": "22",
