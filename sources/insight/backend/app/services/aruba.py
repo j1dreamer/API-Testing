@@ -13,7 +13,7 @@ DEFAULT_BASE_URL = "https://portal.instant-on.hpe.com"
 
 class ArubaService:
     def __init__(self):
-        self.session_cookies: Dict[str, str] = {}
+        pass
 
     async def _get_auth_headers(self, aruba_token: Optional[str]) -> Dict[str, str]:
         """Prepare headers based on the provided token."""
@@ -55,18 +55,19 @@ class ArubaService:
 
         # Dynamic Header Spoofing
         parsed_target = urlparse(url)
-        is_sso = "sso.arubainstanton.com" in url or "google.com" in url
+        target_host = parsed_target.netloc
         
-        if is_sso:
-            origin_val = STRICT_ORIGIN
-            referer_val = STRICT_REFERER
-        else:
-            origin_val = f"{parsed_target.scheme}://{parsed_target.netloc}"
-            referer_val = f"{origin_val}/"
+        origin_val = f"{parsed_target.scheme}://{target_host}"
+        referer_val = f"{origin_val}/"
 
         final_headers["Origin"] = origin_val
         final_headers["Referer"] = referer_val
-        final_headers["Host"] = parsed_target.netloc
+        final_headers["Host"] = target_host
+
+        print(f"[ARUBA SERVICE] Final URL: {url}")
+        print(f"[ARUBA SERVICE] Target Host: {target_host}")
+        token_present = "Yes" if final_headers.get("Authorization") or final_headers.get("authorization") else "No"
+        print(f"[ARUBA SERVICE] Token Presence: {token_present}")
 
         # Execute Request
         async with httpx.AsyncClient(

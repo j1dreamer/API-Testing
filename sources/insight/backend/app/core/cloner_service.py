@@ -7,100 +7,107 @@ from app.core import replay_service
 
 async def get_live_account_sites(aruba_token: str) -> List[Dict[str, Any]]:
     """Fetch all live sites for the provided token."""
-    headers = {
-        "Authorization": f"Bearer {aruba_token}",
-        "Accept": "application/json, text/plain, */*",
-        "X-ION-API-VERSION": "22",
-        "X-ION-CLIENT-TYPE": "InstantOn",
-        "X-ION-CLIENT-PLATFORM": "web",
-        "Origin": "https://portal.instant-on.hpe.com",
-        "Referer": "https://portal.instant-on.hpe.com/sites/list",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36",
-        "Sec-Fetch-Mode": "cors",
-        "Sec-Fetch-Site": "same-origin"
-    }
-    
-    async with httpx.AsyncClient(verify=False) as client:
-        try:
-            res = await client.get("https://portal.instant-on.hpe.com/api/sites", headers=headers, timeout=10.0)
-            if res.status_code in [401, 403]:
-                print(f"[CLONER] Live sites fetch received {res.status_code}")
-                from fastapi import HTTPException
-                raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
-                
-            if res.status_code == 200:
-                data = res.json()
-                raw_elements = data if isinstance(data, list) else data.get("elements", [])
-                
-                # Standardize fields: 'id' -> 'siteId', 'name' -> 'siteName'
-                standard_sites = []
-                for s in raw_elements:
-                    standard_sites.append({
-                        "siteId": s.get("id") or s.get("siteId"),
-                        "siteName": s.get("name") or s.get("siteName", "Unknown Site"),
-                        "role": s.get("userRoleOnSite")
-                    })
-                return standard_sites
-        except Exception as e:
+    print("!!! DEBUG: GET_LIVE_ACCOUNT_SITES CALLED !!!")
+    from app.services.aruba import aruba_service
+    try:
+        # Use the service singleton which has smarter header spoofing
+        res = await aruba_service.call_api(
+            method="GET",
+            endpoint="/api/sites",
+            aruba_token=aruba_token
+        )
+        
+        if res.status_code in [401, 403]:
+            # Try v1 if legacy fails
+            res = await aruba_service.call_api(
+                method="GET",
+                endpoint="/api/v1/sites",
+                aruba_token=aruba_token
+            )
+
+        if res.status_code in [401, 403]:
+            print(f"[CLONER] Live sites fetch received {res.status_code}: {res.text[:200]}")
             from fastapi import HTTPException
-            print(f"[CLONER] Failed to fetch live sites: {e}")
-            if isinstance(e, HTTPException):
-                raise e
+            raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
+            
+        if res.status_code == 200:
+            data = res.json()
+            raw_elements = data if isinstance(data, list) else data.get("elements", [])
+            
+            # Standardize fields: 'id' -> 'siteId', 'name' -> 'siteName'
+            standard_sites = []
+            for s in raw_elements:
+                standard_sites.append({
+                    "siteId": s.get("id") or s.get("siteId"),
+                    "siteName": s.get("name") or s.get("siteName", "Unknown Site"),
+                    "role": s.get("userRoleOnSite")
+                })
+            return standard_sites
+    except Exception as e:
+        from fastapi import HTTPException
+        print(f"[CLONER] Failed to fetch live sites: {e}")
+        if isinstance(e, HTTPException):
+            raise e
     return []
 
 async def fetch_site_config_live(site_id: str, aruba_token: str) -> Dict[str, Any]:
     """Fetch live wired/wireless configuration for a site using the provided token."""
-    headers = {
-        "Authorization": f"Bearer {aruba_token}",
-        "Accept": "application/json, text/plain, */*",
-        "X-ION-API-VERSION": "22",
-        "X-ION-CLIENT-TYPE": "InstantOn",
-        "X-ION-CLIENT-PLATFORM": "web",
-        "Referer": "https://portal.instant-on.hpe.com/sites/list"
-    }
-    
-    async with httpx.AsyncClient(verify=False) as client:
-        try:
-            # Fetch networks
-            url_nets = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/networksSummary"
-            res_nets = await client.get(url_nets, headers=headers, timeout=10.0)
+    from app.services.aruba import aruba_service
+    try:
+        # Fetch networks
+        res_nets = await aruba_service.call_api(
+            method="GET",
+            endpoint=f"/api/sites/{site_id}/networksSummary",
+            aruba_token=aruba_token
+        )
+        
+        if res_nets.status_code in [401, 403]:
+            # Try v1 fallback
+            res_nets = await aruba_service.call_api(
+                method="GET",
+                endpoint=f"/api/v1/sites/{site_id}/networksSummary",
+                aruba_token=aruba_token
+            )
+
+        if res_nets.status_code in [401, 403]:
+            print(f"[CLONER] Live config fetch received {res_nets.status_code}")
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
             
-            if res_nets.status_code in [401, 403]:
-                print(f"[CLONER] Live config fetch received {res_nets.status_code}")
-                from fastapi import HTTPException
-                raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
-                
-            # Fetch guest portal settings (site-level)
-            url_guest = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/guestPortalSettings"
-            res_guest = await client.get(url_guest, headers=headers, timeout=10.0)
+        # Fetch guest portal settings (site-level)
+        res_guest = await aruba_service.call_api(
+            method="GET",
+            endpoint=f"/api/sites/{site_id}/guestPortalSettings",
+            aruba_token=aruba_token
+        )
+        
+        # Safe JSON parsing
+        nets_data = []
+        if res_nets.status_code == 200:
+            try:
+                nets_data = res_nets.json()
+            except Exception:
+                print(f"[CLONER] Failed to parse networks JSON: {res_nets.text[:100]}")
+        
+        guest_data = None
+        if res_guest.status_code == 200:
+            try:
+                guest_data = res_guest.json()
+            except Exception:
+                print(f"[CLONER] Failed to parse guest portal JSON: {res_guest.text[:100]}")
+        
+        config = {
+            "networks": nets_data,
+            "guest_portal": guest_data
+        }
+        
+        if not config["networks"] and res_nets.status_code != 200:
+            return {"error": f"Live fetch failed with status {res_nets.status_code}. Details: {res_nets.text[:100]}"}
             
-            # Safe JSON parsing
-            nets_data = []
-            if res_nets.status_code == 200:
-                try:
-                    nets_data = res_nets.json()
-                except Exception:
-                    print(f"[CLONER] Failed to parse networks JSON: {res_nets.text[:100]}")
-            
-            guest_data = None
-            if res_guest.status_code == 200:
-                try:
-                    guest_data = res_guest.json()
-                except Exception:
-                    print(f"[CLONER] Failed to parse guest portal JSON: {res_guest.text[:100]}")
-            
-            config = {
-                "networks": nets_data,
-                "guest_portal": guest_data
-            }
-            
-            if not config["networks"] and res_nets.status_code != 200:
-                return {"error": f"Live fetch failed with status {res_nets.status_code}. Details: {res_nets.text[:100]}"}
-                
-            return config
-        except Exception as e:
-            print(f"[CLONER] Fetch config exception: {str(e)}")
-            return {"error": f"Live fetch exception: {str(e)}"}
+        return config
+    except Exception as e:
+        print(f"[CLONER] Fetch config exception: {str(e)}")
+        return {"error": f"Live fetch exception: {str(e)}"}
 
 async def get_captured_sites() -> List[Dict[str, Any]]:
     """Extract unique site IDs and names from raw logs using multiple patterns."""

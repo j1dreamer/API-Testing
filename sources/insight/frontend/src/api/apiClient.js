@@ -17,6 +17,12 @@ apiClient.interceptors.request.use((config) => {
     config.headers['X-ION-API-VERSION'] = '22';
     config.headers['X-ION-CLIENT-TYPE'] = 'InstantOn';
     config.headers['X-ION-CLIENT-PLATFORM'] = 'web';
+
+    // Add user email for backend stateless logging
+    const email = sessionStorage.getItem('insight_user_email');
+    if (email) {
+        config.headers['X-Insight-User'] = email;
+    }
     return config;
 }, (error) => Promise.reject(error));
 

@@ -30,15 +30,22 @@ async def proxy_request(path: str, request: Request):
         skip_headers = {
             "host", "connection", "content-length", "content-type", 
             "x-target-url", "origin", "referer", "accept-encoding", "cookie", "user-agent",
-            "authorization", "x-csrf-token" # aruba_service handles these
+            "x-csrf-token" # aruba_service handles these
         }
         for key, value in request.headers.items():
             if key.lower() not in skip_headers:
                 forward_headers[key] = value
 
+        auth_header = request.headers.get("authorization", "")
+        print(f"!!! DEBUG PROXY !!! Headers: {request.headers.keys()}")
+        print(f"!!! DEBUG PROXY !!! Auth Header: {auth_header}")
+        aruba_token = auth_header.replace("Bearer ", "") if "Bearer " in auth_header else None
+        print(f"!!! DEBUG PROXY !!! Extracted Token: {aruba_token}")
+
         resp = await aruba_service.call_api(
             method=request.method,
             endpoint=target_url,
+            aruba_token=aruba_token,
             data=body,
             headers=forward_headers
         )

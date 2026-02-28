@@ -39,53 +39,15 @@ async def list_target_sites(request: Request):
     return await get_live_account_sites(token)
 
 @router.get("/auth-session")
-async def cloner_auth_session(request: Request, response: Response):
-    """Check if we have an active session for the cloner based on the request token."""
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    
+async def cloner_auth_session(request: Request):
+    """Stateless check: If browser has a token, we consider it 'authenticated'."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return {"token_value": None}
     
     token = auth_header.split(" ")[1]
-    
-    # Find session in database
-    from app.database.connection import get_database
-    db = get_database()
-    session = await db.auth_sessions.find_one({"token_value": token})
-    
-    if session:
-        role = "guest"
-        email = session.get("email")
-        if email:
-            try:
-                from app.database.auth_crud import get_user_by_email
-                user = await get_user_by_email(email)
-                if user:
-                    role = user.get("role", "guest")
-            except Exception:
-                pass
-            
-        # Optional: Calculate remaining time
-        expires_in = session.get("expires_in", 0)
-        captured_at = session.get("captured_at")
-        if captured_at:
-            if captured_at.tzinfo is None:
-                from datetime import timezone
-                captured_at = captured_at.replace(tzinfo=timezone.utc)
-            from datetime import datetime, timezone
-            elapsed = (datetime.now(timezone.utc) - captured_at).total_seconds()
-            expires_in = max(0, int(expires_in - elapsed))
-
-        return {
-            "token_value": token,
-            "expires_in": expires_in,
-            "role": role,
-            "email": email
-        }
-    
-    return {"token_value": None}
+    # We don't check DB anymore. We just return the token back to confirm it's received.
+    return {"token_value": token, "status": "active"}
 
 @router.post("/login")
 async def cloner_login(
@@ -93,6 +55,9 @@ async def cloner_login(
     password: str = Body(..., embed=True)
 ):
     """Trigger a portal login to refresh the ACTIVE_TOKEN."""
+    print("\n" + "!"*60)
+    print(f"DEBUG RESTART: LOGIN FOR {username} - STATELESS MODE")
+    print("!"*60 + "\n")
     from app.core.allowed_emails import is_email_allowed
     if not is_email_allowed(username):
         raise HTTPException(status_code=401, detail="Email không có quyền truy cập vào hệ thống Insight.")
@@ -113,7 +78,14 @@ async def cloner_login(
         except Exception:
             pass
             
-        return {"status": "success", "token_type": "Bearer", "expires_in": token.get("expires_in"), "role": role}
+        return {
+            "status": "success", 
+            "token_type": "Bearer", 
+            "token_value": token.get("data", {}).get("access_token"),
+            "expires_in": token.get("expires_in"), 
+            "role": role,
+            "email": username
+        }
     except HTTPException:
         raise
     except Exception as e:

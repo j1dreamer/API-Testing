@@ -260,16 +260,8 @@ async def replay_login(username: str, password: str, client_id: Optional[str] = 
                 expires_in = final_data.get("expires_in", 1799)
                 
                 if final_token:
-                    await upsert_auth_session(
-                        token_type="bearer",
-                        token_value=final_token,
-                        email=username,
-                        expires_in=expires_in,
-                        source_url=exchange_url,
-                        headers_snapshot=exchange_headers
-                    )
-                    
-                    print(f"[REPLAY] SSO Login success for {username}.")
+                    print(f"[REPLAY] SSO Login success for {username}. Token returned to browser.")
+                    # No longer saving to DB (stateless mode)
                     
                     # --- PHASE 4: Context Discovery (Get Sites/Customer ID) ---
                     customer_id = None
@@ -286,19 +278,28 @@ async def replay_login(username: str, password: str, client_id: Optional[str] = 
                         # 1. Get Customer ID
                         me_url = f"{target_resource}/api/v1/customers/me"
                         me_resp = await client.get(me_url, headers=ctx_headers, timeout=10.0)
+                        print(f"[REPLAY] Context Me: {me_resp.status_code}")
                         if me_resp.status_code == 200:
                             me_data = me_resp.json()
                             customer_id = me_data.get("customerId")
                             print(f"[REPLAY] Customer ID: {customer_id}")
+                        else:
+                            print(f"[REPLAY] Me Failed: {me_resp.text[:200]}")
                         
                         # 2. Get Site ID
                         sites_url = f"{target_resource}/api/v1/sites"
                         sites_resp = await client.get(sites_url, headers=ctx_headers, timeout=10.0)
+                        print(f"[REPLAY] Context Sites: {sites_resp.status_code}")
                         if sites_resp.status_code == 200:
                             sites_data = sites_resp.json()
-                            if sites_data.get("elements"):
+                            if isinstance(sites_data, dict) and sites_data.get("elements"):
                                 site_id = sites_data["elements"][0].get("siteId")
                                 print(f"[REPLAY] Site ID (Primary): {site_id}")
+                            elif isinstance(sites_data, list) and len(sites_data) > 0:
+                                site_id = sites_data[0].get("siteId") or sites_data[0].get("id")
+                                print(f"[REPLAY] Site ID (Primary List): {site_id}")
+                        else:
+                            print(f"[REPLAY] Sites Failed: {sites_resp.text[:200]}")
                     except Exception as e:
                         print(f"[REPLAY WARNING] Context Discovery failed: {e}")
 

@@ -39,9 +39,10 @@ const Login = ({ onLoginSuccess }) => {
 
         try {
             const res = await apiClient.post('/cloner/login', { username, password });
-            sessionStorage.setItem('token', res.data?.token_value || res.data?.access_token || 'aruba_session');
-            sessionStorage.setItem('userRole', res.data?.role || 'guest');
-            sessionStorage.setItem('insight_user_email', username);
+            const data = res.data;
+            sessionStorage.setItem('token', data.token_value || data.access_token);
+            sessionStorage.setItem('userRole', data.role || 'guest');
+            sessionStorage.setItem('insight_user_email', data.email || username);
 
             // Do not setLoading(false) here, let it spin until unmount
             onLoginSuccess();
