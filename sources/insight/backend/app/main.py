@@ -16,6 +16,11 @@ from app.core.inventory.routes import router as inventory_router
 from app.core.cloner.routes import router as cloner_router
 from app.core.replay.routes import router as replay_router
 
+# Feature-based Routes (stateless architecture)
+from app.features.auth.routes import router as auth_router
+from app.features.overview.routes import router as overview_router
+from app.features.config.routes import router as config_router
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle — connect/disconnect MongoDB."""
@@ -77,12 +82,17 @@ app.add_middleware(GlobalLoggingMiddleware)
 # Register routers
 from app.core.admin.routes import router as admin_router
 
-app.include_router(ui_router)       # Proxy Logic
-app.include_router(inventory_router) # Data Scrubbing Logic
-app.include_router(cloner_router)    # Site Cloner Logic
-app.include_router(replay_router)    # Replay/Login Logic
+app.include_router(ui_router)        # Proxy Logic
+app.include_router(inventory_router)  # Data Scrubbing Logic
+app.include_router(cloner_router)     # Site Cloner Logic
+app.include_router(replay_router)     # Replay/Login Logic
 
-# New Admin Routes
+# Feature-based routers (stateless architecture)
+app.include_router(auth_router)       # /api/auth    — login, refresh, logout
+app.include_router(overview_router)   # /api/overview — live site listing
+app.include_router(config_router)     # /api/config   — live site config, SSIDs, overview
+
+# Admin Routes (Track 1 — DB-only auth)
 app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
 @app.get("/health", tags=["System"])

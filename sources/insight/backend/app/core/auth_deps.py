@@ -1,46 +1,88 @@
+"""Auth dependencies — Two-Track stateless pattern.
+
+Track 1 — Internal (require_internal_admin):
+  Reads X-Insight-User header → looks up users collection → checks role + isApproved.
+  Zero Aruba token dependency. Used by Admin, User Management routes.
+
+Track 2 — Aruba (get_stateless_user / StatelessRoleChecker):
+  Reads Authorization: Bearer <aruba_token> + X-Insight-User header.
+  Identity resolved from the header; token used directly against Aruba API.
+  Used by Cloner, Backup, Rollback, SSID management routes.
+"""
 from fastapi import Depends, HTTPException, Request
 from typing import Dict, Any, List
 from app.database.auth_crud import get_user_by_email
 
-async def get_current_user(request: Request) -> Dict[str, Any]:
-    # Extract token from header
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
+
+def _extract_bearer(request: Request) -> str:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Header Authorization không hợp lệ.")
-    
-    token = auth_header.split(" ")[1]
-    
-    # Find the session in DB to get the email associated with this specific token
-    from app.database.connection import get_database
-    db = get_database()
-    session = await db.auth_sessions.find_one({"token_value": token})
-    
-    if not session:
-        raise HTTPException(status_code=401, detail="Phiên làm việc không tồn tại hoặc đã hết hạn.")
+    return auth_header.split(" ", 1)[1]
 
-    email = session.get("email")
+
+def _extract_user_email(request: Request) -> str:
+    email = request.headers.get("X-Insight-User", "").strip()
     if not email:
-        raise HTTPException(status_code=401, detail="Không thể xác định tài khoản từ phiên này.")
+        raise HTTPException(status_code=401, detail="Thiếu header X-Insight-User.")
+    return email
 
+
+# ---------------------------------------------------------------------------
+# Track 1 — Internal Admin (DB-only, no Aruba dependency)
+# ---------------------------------------------------------------------------
+
+async def require_internal_admin(request: Request) -> Dict[str, Any]:
+    """Dep for Admin / User-Management routes. Only checks insight DB."""
+    email = _extract_user_email(request)
     user = await get_user_by_email(email)
-    if user is None:
-        raise HTTPException(status_code=403, detail="Local user not configured for this email.")
+    if not user:
+        raise HTTPException(status_code=403, detail="Tài khoản chưa được đăng ký trong hệ thống.")
+    if not user.get("isApproved"):
+        raise HTTPException(status_code=403, detail="Tài khoản chưa được phê duyệt.")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Yêu cầu quyền Admin.")
     return user
 
-async def get_current_approved_user(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    if not current_user.get("isApproved"):
-        raise HTTPException(status_code=403, detail="Pending Admin Approval")
-    return current_user
 
-class RoleChecker:
+# ---------------------------------------------------------------------------
+# Track 2 — Stateless Aruba (Bearer token + X-Insight-User header)
+# ---------------------------------------------------------------------------
+
+async def get_stateless_user(request: Request) -> Dict[str, Any]:
+    """
+    Resolves identity from X-Insight-User header against insight DB.
+    Confirms a Bearer token is present (validated by Aruba on actual API calls).
+    """
+    _extract_bearer(request)           # ensure token is present
+    email = _extract_user_email(request)
+
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=403, detail="Tài khoản chưa được đăng ký trong hệ thống.")
+    if not user.get("isApproved"):
+        raise HTTPException(status_code=403, detail="Tài khoản chưa được phê duyệt.")
+    return user
+
+
+class StatelessRoleChecker:
     def __init__(self, allowed_roles: List[str]):
         self.allowed_roles = allowed_roles
 
-    def __call__(self, user: Dict[str, Any] = Depends(get_current_approved_user)):
+    async def __call__(self, user: Dict[str, Any] = Depends(get_stateless_user)) -> Dict[str, Any]:
         if user.get("role") not in self.allowed_roles:
-            raise HTTPException(status_code=403, detail=f"Operation not permitted. Requires one of: {self.allowed_roles}")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Thao tác không được phép. Yêu cầu một trong các quyền: {self.allowed_roles}"
+            )
         return user
 
-# Convenience dependencies
-require_admin = RoleChecker(["admin"])
-require_user_or_admin = RoleChecker(["admin", "user"])
+
+# Convenience stateless deps
+require_operator_stateless = StatelessRoleChecker(["admin", "operator"])
+require_admin_stateless    = StatelessRoleChecker(["admin"])
+

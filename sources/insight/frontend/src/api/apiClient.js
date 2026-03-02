@@ -59,14 +59,14 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config;
         const status = error.response ? error.response.status : null;
 
-        // Check if error is 401/403 and we haven't retried yet
-        // Do not auto-refresh for explicit authentication endpoints
-        const isAuthEndpoint = originalRequest.url?.includes('/login') || originalRequest.url?.includes('/auth-session');
+        // Không auto-refresh cho các auth endpoints để tránh vòng lặp vô tận
+        const isAuthEndpoint = originalRequest.url?.includes('/login')
+            || originalRequest.url?.includes('/auth/refresh')
+            || originalRequest.url?.includes('/auth/session');
 
         if ((status === 401 || status === 403) && !originalRequest._retry && !isAuthEndpoint) {
             if (isRefreshing) {
-                console.warn('SecurityService: Access Token refresh already in progress, waiting...');
-                // If currently refreshing, queue this request
+                console.warn('SecurityService: Token refresh đang diễn ra, queuing request...');
                 return new Promise(function (resolve, reject) {
                     failedQueue.push({ resolve, reject });
                 }).then(token => {
@@ -79,46 +79,36 @@ apiClient.interceptors.response.use(
 
             originalRequest._retry = true;
             isRefreshing = true;
-            console.warn('SecurityService: Refresh Token Lock acquired, proceeding with refresh');
+            console.warn('SecurityService: Acquiring refresh lock...');
 
             try {
-                // Try to get a new token via backend (using base axios to avoid infinite loops)
-                // Note: use the backend session auth endpoint to get a fresh token if session is still alive
-                const res = await axios.get('/api/cloner/auth-session');
-                const newToken = res.data?.token_value || res.data?.token;
+                const refreshToken = sessionStorage.getItem('refresh_token');
+                if (!refreshToken) throw new Error("Không tìm thấy refresh_token trong sessionStorage");
 
-                if (newToken) {
-                    // Update token in storage
-                    sessionStorage.setItem('token', newToken);
+                // Dùng axios gốc (không qua apiClient) để tránh trigger interceptor lần nữa
+                const res = await axios.post('/api/auth/refresh', { refresh_token: refreshToken });
+                const newToken = res.data?.token_value;
+                const newRefresh = res.data?.refresh_token;
 
-                    // Update original request with new token
-                    originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+                if (!newToken) throw new Error("refresh endpoint không trả về token");
 
-                    console.warn('Access token refreshed');
+                sessionStorage.setItem('token', newToken);
+                if (newRefresh) sessionStorage.setItem('refresh_token', newRefresh);
 
-                    // Process awaiting queue
-                    processQueue(null, newToken);
+                originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+                console.warn('SecurityService: Token refreshed thành công');
 
-                    // Retry original request
-                    return apiClient(originalRequest);
-                } else {
-                    throw new Error("No token returned from auto-refresh");
-                }
+                processQueue(null, newToken);
+                return apiClient(originalRequest);
             } catch (refreshError) {
-                // Auto-refresh failed, proceed with normal logout
                 processQueue(refreshError, null);
 
                 if (!isRedirecting) {
                     isRedirecting = true;
-                    console.error(`Session expired (${status}) & Auto-refresh failed. Cleaning up...`);
-
-                    // Clear all session and local storage
+                    console.error(`Phiên hết hạn (${status}) và refresh thất bại. Đang đăng xuất...`);
                     sessionStorage.clear();
                     localStorage.clear();
-
-                    // Notify backend to clear its in-memory session
-                    fetch('/api/cloner/logout', { method: 'POST' }).finally(() => {
-                        // Hard redirect to root
+                    fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
                         if (window.location.pathname === '/') {
                             window.location.reload();
                         } else {
@@ -129,7 +119,7 @@ apiClient.interceptors.response.use(
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;
-                console.warn('SecurityService: Token Refresh Lock released');
+                console.warn('SecurityService: Refresh lock released');
             }
         }
 

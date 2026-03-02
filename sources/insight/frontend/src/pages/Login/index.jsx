@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../api/apiClient';
+import apiClient from '../../api/apiClient'; // still needed for POST /auth/login
 import { ShieldCheck } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -11,25 +11,14 @@ const Login = ({ onLoginSuccess }) => {
     const [loading, setLoading] = useState(false);
     const [checkingAuth, setCheckingAuth] = useState(true);
 
-    // Auto-check if already logged in by backend session
+    // Auto-check: nếu token đã có trong sessionStorage thì bỏ qua màn hình login
     useEffect(() => {
-        const checkAuthStatus = async () => {
-            try {
-                const res = await apiClient.get('/cloner/auth-session');
-                if (res.data && res.data.token_value) {
-                    sessionStorage.setItem('token', res.data.token_value);
-                    sessionStorage.setItem('userRole', res.data.role || 'guest');
-                    onLoginSuccess();
-                } else {
-                    sessionStorage.removeItem('userRole');
-                    setCheckingAuth(false);
-                }
-            } catch (error) {
-                sessionStorage.removeItem('userRole');
-                setCheckingAuth(false);
-            }
-        };
-        checkAuthStatus();
+        const storedToken = sessionStorage.getItem('token');
+        if (storedToken) {
+            onLoginSuccess();
+        } else {
+            setCheckingAuth(false);
+        }
     }, [onLoginSuccess]);
 
     const handleSubmit = async (e) => {
@@ -38,9 +27,10 @@ const Login = ({ onLoginSuccess }) => {
         setError('');
 
         try {
-            const res = await apiClient.post('/cloner/login', { username, password });
+            const res = await apiClient.post('/auth/login', { username, password });
             const data = res.data;
             sessionStorage.setItem('token', data.token_value || data.access_token);
+            sessionStorage.setItem('refresh_token', data.refresh_token || '');
             sessionStorage.setItem('userRole', data.role || 'guest');
             sessionStorage.setItem('insight_user_email', data.email || username);
 

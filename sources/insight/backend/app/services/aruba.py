@@ -2,8 +2,6 @@ import httpx
 import json
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse
-from app.database.crud import get_all_auth_sessions, delete_all_auth_sessions
-from app.config import MONGODB_URL # Not used directly but ensured config loaded
 
 # Constants
 STRICT_ORIGIN = "https://portal.instant-on.hpe.com"
@@ -48,6 +46,10 @@ class ArubaService:
         final_headers = {
             "User-Agent": CHROME_USER_AGENT,
             "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-us",
+            "X-Ion-Api-Version": "23",
+            "X-Ion-Client-Type": "InstantOn",
+            "X-Ion-Client-Platform": "web",
         }
         final_headers.update(auth_headers)
         if headers:

@@ -1,78 +1,43 @@
 /**
- * Helper to process and flatten network data from multiple API endpoints
+ * Process wiredNetworks API response into a grouped hierarchy.
+ *
+ * Each entry = one wired network (VLAN) as the parent,
+ * with its wirelessNetworks (SSIDs) embedded as children.
+ *
+ * Client count = wiredClientsCount + sum of wirelessClientsCount across all SSIDs.
  */
 
-const isUUID = (str) => {
-    if (!str) return false;
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-};
+export const processWiredNetworks = (wiredData) => {
+    const elements = wiredData?.elements || [];
 
-export const processHierarchicalNetworks = (wiredData, summaryData) => {
-    const wiredElements = wiredData?.elements || [];
-    const summaryElements = summaryData?.elements || summaryData?.networks || [];
+    return elements.map(wired => {
+        const ssids = wired.wirelessNetworks || [];
 
-    // 1. Create a lookup map for summary data (traffic, SSID names etc)
-    const summaryMap = new Map();
-    summaryElements.forEach(item => {
-        const id = item.networkId || item.id;
-        if (id) summaryMap.set(id, item);
+        // Sum wireless clients across all attached SSIDs
+        const wirelessClientTotal = ssids.reduce(
+            (sum, ssid) => sum + (ssid.wirelessClientsCount ?? 0),
+            0
+        );
+
+        const totalClients = (wired.wiredClientsCount ?? 0) + wirelessClientTotal;
+
+        return {
+            id:           wired.id,
+            name:         wired.wiredNetworkName || `VLAN ${wired.vlanId}`,
+            vlanId:       wired.vlanId ?? '—',
+            type:         wired.type || 'employee',
+            isEnabled:    wired.isEnabled === true,
+            health:       wired.health || 'unknown',
+            wiredClients: wired.wiredClientsCount ?? 0,
+            totalClients,
+            ssids:        ssids.map(ssid => ({
+                id:        ssid.id,
+                name:      ssid.networkName,
+                isEnabled: ssid.isEnabled === true,
+                clients:   ssid.wirelessClientsCount ?? 0,
+                band:      ssid.radioFrequencyBand || null,
+                security:  ssid.security || null,
+            })),
+        };
     });
-
-    const result = [];
-
-    wiredElements.forEach(wired => {
-        const vlanId = wired.vlanId || 'Native';
-        const wiredName = wired.wiredNetworkName;
-
-        // Final suppressed name for Wired
-        const resolvedWiredName = (wiredName && !isUUID(wiredName))
-            ? wiredName
-            : `VLAN ${vlanId}`;
-
-        const vlanInfo = `(VLAN ${vlanId}) ${resolvedWiredName}`;
-
-        // 2. Add the Wired Network itself
-        result.push({
-            id: wired.id,
-            networkId: wired.id,
-            displayName: resolvedWiredName,
-            type: wired.type || 'employee',
-            displayType: 'wired',
-            vlanId: wired.vlanId,
-            vlanInfo: vlanInfo,
-            clientsCount: wired.wiredClientsCount || 0,
-            usageBytes: 0, // Wired networks don't usually have aggregate usage in this endpoint
-            isEnabled: wired.isEnabled,
-            source: wired
-        });
-
-        // 3. Process child Wireless Networks (SSIDs)
-        const childWireless = wired.wirelessNetworks || [];
-        childWireless.forEach(ssid => {
-            const ssidId = ssid.id;
-            const ssidSummary = summaryMap.get(ssidId) || {};
-
-            const ssidName = ssid.networkName;
-            const resolvedSsidName = (ssidName && !isUUID(ssidName))
-                ? ssidName
-                : `VLAN ${vlanId}`;
-
-            result.push({
-                id: ssidId,
-                networkId: ssidId,
-                displayName: resolvedSsidName,
-                type: ssidSummary.type || 'guest',
-                displayType: 'wireless',
-                vlanId: wired.vlanId, // Map from parent
-                vlanInfo: vlanInfo,  // Map from parent
-                clientsCount: ssidSummary.wirelessClientsCount || 0,
-                usageBytes: ssidSummary.dataTraffic?.downstreamDataTransferredInBytes ||
-                    ssidSummary.downstreamDataTransferredInBytes || 0,
-                isEnabled: ssid.isEnabled,
-                source: { ...ssid, ...ssidSummary }
-            });
-        });
-    });
-
-    return result;
 };

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Any, Dict
 import pytz
-from app.core.auth_deps import require_admin
+from app.core.auth_deps import require_internal_admin as require_admin
 from app.database.connection import get_database
 from app.database.models import LogResponse
 from app.database.auth_crud import update_user_role_approval

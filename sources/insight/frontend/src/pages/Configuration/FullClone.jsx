@@ -51,18 +51,19 @@ const Cloner = () => {
     // --- 3. Các hàm Logic xử lý API ---
     const loadSourceSites = async (mode) => {
         try {
-            const endpoint = mode === 'live' ? '/cloner/live-sites' : '/cloner/sites';
-            const res = await apiClient.get(endpoint);
-            setSourceSites(Array.isArray(res.data) ? res.data : []);
+            const res = await apiClient.get('/overview/sites');
+            const list = Array.isArray(res.data) ? res.data : (res.data?.sites || []);
+            setSourceSites(list);
         } catch (error) {
-            if (mode === 'live') setSourceSites([]);
+            setSourceSites([]);
         }
     };
 
     const loadTargetSites = async () => {
         try {
-            const res = await apiClient.get('/cloner/target-sites');
-            setTargetSites(Array.isArray(res.data) ? res.data : []);
+            const res = await apiClient.get('/overview/sites');
+            const list = Array.isArray(res.data) ? res.data : (res.data?.sites || []);
+            setTargetSites(list);
         } catch (error) {
             console.error("Failed to load target sites:", error);
         }

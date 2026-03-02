@@ -1,22 +1,22 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { RefreshCw, AlertCircle, Search } from 'lucide-react';
+import { AlertCircle, Search, Network } from 'lucide-react';
 import apiClient from '../../../api/apiClient';
 import { useSite } from '../../../context/SiteContext';
-import { processHierarchicalNetworks } from './dataProcessor';
+import { processWiredNetworks } from './dataProcessor';
 import NetworkTable from './NetworkTable';
 import useIntervalFetch from '../../../hooks/useIntervalFetch';
 import { useSettings } from '../../../context/SettingsContext';
 import SyncIndicator from '../../../components/SyncIndicator';
 
 const Networks = () => {
-    const [networksData, setNetworksData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [error, setError] = useState('');
-    const [lastUpdated, setLastUpdated] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('all');
-    const [sortConfig, setSortConfig] = useState({ key: 'vlan', direction: 'asc' });
+    const [networksData, setNetworksData]   = useState([]);
+    const [loading, setLoading]             = useState(true);
+    const [isRefreshing, setIsRefreshing]   = useState(false);
+    const [error, setError]                 = useState('');
+    const [lastUpdated, setLastUpdated]     = useState(null);
+    const [searchTerm, setSearchTerm]       = useState('');
+    const [typeFilter, setTypeFilter]       = useState('all');   // 'all' | 'employee' | 'guest'
+    const [sortConfig, setSortConfig]       = useState({ key: 'vlan', direction: 'asc' });
 
     const { selectedSiteId, sites, fetchSites } = useSite();
     const { isAutoRefreshEnabled } = useSettings();
@@ -27,94 +27,83 @@ const Networks = () => {
 
     useEffect(() => {
         setNetworksData([]);
-        if (selectedSiteId) fetchAllData(selectedSiteId);
+        if (selectedSiteId) fetchNetworks(selectedSiteId);
     }, [selectedSiteId]);
 
-    const fetchAllData = async (siteId, silent = false) => {
+    const fetchNetworks = async (siteId, silent = false) => {
+        if (!siteId) return;
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
-
         setError('');
         try {
-            // Fetch hierarchical wired networks and summary
-            const [wiredRes, summaryRes] = await Promise.all([
-                apiClient.get(`/proxy/api/sites/${siteId}/wiredNetworks`),
-                apiClient.get(`/proxy/api/sites/${siteId}/networksSummary`)
-            ]);
-
-            const processed = processHierarchicalNetworks(wiredRes.data, summaryRes.data);
+            // Single call — wirelessNetworks + wirelessClientsCount are embedded in the response
+            const res = await apiClient.get(`/proxy/api/sites/${siteId}/wiredNetworks`);
+            const processed = processWiredNetworks(res.data);
             setNetworksData(processed);
             setLastUpdated(new Date());
         } catch (err) {
-            console.error("Networks restructure fetch error:", err);
-            if (!silent) setError("Failed to synchronize network configurations.");
+            console.error('Networks fetch error:', err);
+            if (!silent) setError('Failed to synchronize network configurations.');
         } finally {
             if (!silent) setLoading(false);
             else setIsRefreshing(false);
         }
     };
 
-    // Auto-polling conditionally based on settings
+    // 30s silent polling
     useIntervalFetch(() => {
-        if (selectedSiteId && !loading) {
-            fetchAllData(selectedSiteId, true);
-        }
-    }, isAutoRefreshEnabled ? 60000 : null, [selectedSiteId, loading, isAutoRefreshEnabled]);
-
+        if (selectedSiteId && !loading) fetchNetworks(selectedSiteId, true);
+    }, isAutoRefreshEnabled ? 30000 : null, [selectedSiteId, loading, isAutoRefreshEnabled]);
 
     const handleSort = (key) => {
         setSortConfig(prev => ({
             key,
-            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
         }));
     };
 
     const filteredAndSortedData = useMemo(() => {
         let result = [...networksData];
 
-        // Filtering
-        if (searchTerm || typeFilter !== 'all') {
-            result = result.filter(n => {
-                const matchesSearch =
-                    n.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    (n.vlanId || "").toString().includes(searchTerm);
-
-                const matchesType = typeFilter === 'all' ||
-                    (typeFilter === 'wireless' && n.displayType === 'wireless') ||
-                    (typeFilter === 'wired' && n.displayType === 'wired');
-
-                return matchesSearch && matchesType;
-            });
+        if (searchTerm) {
+            const q = searchTerm.toLowerCase();
+            result = result.filter(n =>
+                n.name.toLowerCase().includes(q) ||
+                String(n.vlanId).includes(q) ||
+                n.ssids.some(s => s.name.toLowerCase().includes(q))
+            );
         }
 
-        // Sorting
+        if (typeFilter !== 'all') {
+            result = result.filter(n => n.type?.toLowerCase() === typeFilter);
+        }
+
         result.sort((a, b) => {
             let valA, valB;
             switch (sortConfig.key) {
                 case 'name':
-                    valA = a.displayName.toLowerCase();
-                    valB = b.displayName.toLowerCase();
-                    break;
-                case 'type':
-                    valA = a.displayType;
-                    valB = b.displayType;
+                    valA = a.name.toLowerCase();
+                    valB = b.name.toLowerCase();
                     break;
                 case 'vlan':
-                    valA = parseInt(a.vlanId) || 0;
-                    valB = parseInt(b.vlanId) || 0;
+                    valA = Number(a.vlanId) || 0;
+                    valB = Number(b.vlanId) || 0;
+                    break;
+                case 'type':
+                    valA = a.type || '';
+                    valB = b.type || '';
                     break;
                 case 'clients':
-                    valA = a.clientsCount || 0;
-                    valB = b.clientsCount || 0;
+                    valA = a.totalClients;
+                    valB = b.totalClients;
                     break;
-                case 'usage':
-                    valA = a.usageBytes || 0;
-                    valB = b.usageBytes || 0;
+                case 'status':
+                    valA = a.isEnabled ? 1 : 0;
+                    valB = b.isEnabled ? 1 : 0;
                     break;
                 default:
                     return 0;
             }
-
             if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
             if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
@@ -123,45 +112,70 @@ const Networks = () => {
         return result;
     }, [networksData, searchTerm, typeFilter, sortConfig]);
 
+    const totalClients = networksData.reduce((sum, n) => sum + n.totalClients, 0);
+    const activeCount  = networksData.filter(n => n.isEnabled).length;
+
     return (
-        <div className="p-8 pb-32 font-sans overflow-hidden">
+        <div className="p-8 pb-32 font-sans overflow-hidden bg-slate-950 min-h-screen">
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight italic uppercase">Networks Dashboard</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Hierarchical view for {sites.find(s => s.siteId === selectedSiteId)?.siteName || 'current site'}
+                    <h1 className="text-2xl font-black text-white tracking-tight italic uppercase">Networks</h1>
+                    <p className="text-sm text-slate-400 mt-1">
+                        Wired &amp; wireless topology for {sites.find(s => s.siteId === selectedSiteId)?.siteName || 'current site'}
                     </p>
                 </div>
-
                 <div className="flex items-center gap-4">
                     <SyncIndicator isSyncing={loading || isRefreshing} lastUpdated={lastUpdated} />
                 </div>
             </div>
 
+            {/* Stats Row */}
+            <div className="flex flex-wrap gap-3 mb-6">
+                <div className="bg-slate-900 border border-white/5 rounded-2xl h-14 px-5 flex items-center gap-3 shadow-xl">
+                    <Network size={16} className="text-indigo-400" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {networksData.length} Networks
+                    </span>
+                </div>
+                <div className="bg-slate-900 border border-white/5 rounded-2xl h-14 px-5 flex items-center gap-3 shadow-xl">
+                    <span className="relative flex h-2.5 w-2.5">
+                        {activeCount > 0 && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />}
+                        <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${activeCount > 0 ? 'bg-emerald-500' : 'bg-slate-600'}`} />
+                    </span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {activeCount} Active
+                    </span>
+                </div>
+                <div className="bg-slate-900 border border-white/5 rounded-2xl h-14 px-5 flex items-center gap-3 shadow-xl">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {totalClients} Total Clients
+                    </span>
+                </div>
+            </div>
+
             {/* Filter Toolbar */}
             <div className="flex flex-wrap items-center gap-4 mb-6">
-                <div className="relative flex-1 min-w-[320px]">
+                <div className="relative flex-1 min-w-[280px]">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                     <input
                         type="text"
-                        placeholder="Search Name or VLAN ID..."
+                        placeholder="Search network name, VLAN, or SSID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-14 pl-12 pr-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white text-sm focus:outline-none focus:border-indigo-500/50 shadow-inner transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        className="w-full h-14 pl-12 pr-4 bg-slate-900 border border-white/5 rounded-2xl text-white text-sm focus:outline-none focus:border-indigo-500/50 shadow-inner transition-all hover:bg-slate-800/50"
                     />
                 </div>
 
-                <div className="flex gap-3">
-                    <select
-                        value={typeFilter}
-                        onChange={(e) => setTypeFilter(e.target.value)}
-                        className="h-14 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl px-5 text-slate-800 dark:text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50 appearance-none min-w-[170px] cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all shadow-xl"
-                    >
-                        <option value="all">All Networks</option>
-                        <option value="wired">Wired Only</option>
-                        <option value="wireless">Wireless Only</option>
-                    </select>
-                </div>
+                <select
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50 appearance-none min-w-[160px] cursor-pointer hover:bg-slate-800/50 transition-all shadow-xl"
+                >
+                    <option value="all">All Types</option>
+                    <option value="employee">Employee</option>
+                    <option value="guest">Guest</option>
+                </select>
             </div>
 
             {error && (

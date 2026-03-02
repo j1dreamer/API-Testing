@@ -6,7 +6,10 @@
       "Bash(find \"d:/AITC/API-Testing/sources/insight/backend\" -type d -name \"__pycache__\" -exec rm -rf {} +)",
       "Bash(find \"d:/AITC/API-Testing/sources/insight/backend\" -name \"*.pyc\" -delete)",
       "Bash(echo \"Remaining garbage: $?\")",
-      "Bash(find d:/AITC/API-Testing/sources/insight/backend -type d -name __pycache__ -exec rm -rf {} +)"
+      "Bash(find d:/AITC/API-Testing/sources/insight/backend -type d -name __pycache__ -exec rm -rf {} +)",
+      "Bash(python -c \"import fastapi; print\\(fastapi.__file__\\)\")",
+      "Bash(py -c \"import fastapi; print\\(fastapi.__file__\\)\")",
+      "Bash(xargs grep -l \"@router\\\\|router\\\\.get\\\\|router\\\\.post\")"
     ]
   }
 }

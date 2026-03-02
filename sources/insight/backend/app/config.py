@@ -5,9 +5,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "aruba_capture")
+DATABASE_NAME = "insight"
 
-# Security
-INTERNAL_APP_AUTH = os.getenv("INTERNAL_APP_AUTH", "secret-internal-key-change-me")
+# Security — Fernet key source (PHẢI được set qua biến môi trường trong production)
+_DEFAULT_KEY = "secret-internal-key-change-me"
+INTERNAL_APP_AUTH = os.getenv("INTERNAL_APP_AUTH", _DEFAULT_KEY)
+if INTERNAL_APP_AUTH == _DEFAULT_KEY:
+    import warnings
+    warnings.warn(
+        "[SECURITY] INTERNAL_APP_AUTH đang dùng giá trị mặc định. "
+        "Hãy set biến môi trường này trước khi deploy lên production.",
+        stacklevel=2
+    )
 # Super Admins (comma-separated list of emails)
 SUPER_ADMIN_EMAILS = [email.strip() for email in os.getenv("SUPER_ADMIN_EMAILS", "cuong.nguyen@aitc-jsc.com").split(",") if email.strip()]

@@ -56,12 +56,9 @@ const SmartSync = () => {
 
     const loadLiveSites = async () => {
         try {
-            const res = await apiClient.get('/cloner/live-sites');
-            if (Array.isArray(res.data)) {
-                setLiveSites(res.data.sort((a, b) => a.siteName.localeCompare(b.siteName)));
-            } else {
-                setLiveSites([]);
-            }
+            const res = await apiClient.get('/overview/sites');
+            const list = Array.isArray(res.data) ? res.data : (res.data?.sites || []);
+            setLiveSites(list.sort((a, b) => a.siteName.localeCompare(b.siteName)));
         } catch (error) {
             console.error(error);
             setLiveSites([]);
@@ -71,14 +68,14 @@ const SmartSync = () => {
     const getRoleBadgeInfo = (roleStr) => {
         const role = (roleStr || 'UNKNOWN').toLowerCase();
         switch (role) {
-            case 'administrator':
-                return { text: 'ADMINISTRATOR', classes: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50', canClone: true };
-            case 'operator':
+            case 'admin':
+                return { text: 'ADMIN', classes: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50', canClone: true };
+            case 'op':
                 return { text: 'OPERATOR', classes: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50', canClone: true };
-            case 'delegate':
-                return { text: 'DELEGATE', classes: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50', canClone: false };
-            case 'viewer':
+            case 'view':
                 return { text: 'VIEWER', classes: 'bg-slate-200 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600/50', canClone: false };
+            case 'guest':
+                return { text: 'GUEST', classes: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50', canClone: false };
             default:
                 return { text: role.toUpperCase(), classes: 'bg-slate-100 dark:bg-slate-800/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700/50', canClone: false };
         }
@@ -209,6 +206,15 @@ const SmartSync = () => {
     };
 
     const handleProceedToExecution = () => {
+        // Security gate: block if any selected target is view-only
+        const unauthorizedTargets = Array.from(selectedTargetIds)
+            .map(id => liveSites.find(s => s.siteId === id))
+            .filter(s => s && !getRoleBadgeInfo(s.role).canClone);
+        if (unauthorizedTargets.length > 0) {
+            const names = unauthorizedTargets.map(s => s.siteName).join(', ');
+            return alert(`Unauthorized: You do not have administrator permissions to write to: ${names}`);
+        }
+
         if (selectedAction === 'update_ssid_password') {
             if (!selectedSSIDName) return alert("Vui lòng chọn một SSID.");
             const selectedSSID = compiledSSIDs.find(s => s.networkName === selectedSSIDName);

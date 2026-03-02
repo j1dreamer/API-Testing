@@ -3,8 +3,6 @@ import json
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request
-from app.database.crud import upsert_auth_session
-from app.database.connection import get_database
 
 # Stateless session management. Session tokens are passed in request headers.
 
@@ -29,25 +27,6 @@ async def replay_login(username: str, password: str, client_id: Optional[str] = 
         target_client_id_authz = client_id # Provided ID as first fallback
         target_resource = "https://portal.instant-on.hpe.com"
         
-        # --- PHASE 0.1: DB Lookup (Pre-Discovery) ---
-        if not target_client_id_authn:
-            try:
-                db = get_database()
-                # Find any client_id in past successful POST requests to SSO
-                known_log = await db["raw_logs"].find_one(
-                    {"request_url": {"$regex": "sso.arubainstanton.com/as/token.oauth2"}, "request_body": {"$regex": "client_id="}},
-                    sort=[("timestamp", -1)]
-                )
-                if known_log:
-                    import re
-                    match = re.search(r"client_id=([a-f0-9-]+)", known_log["request_body"])
-                    if match:
-                        target_client_id_authn = match.group(1)
-                        target_client_id_authz = target_client_id_authn
-                        print(f"[REPLAY] Found known client_id in DB: {target_client_id_authn}")
-            except Exception as e:
-                print(f"[REPLAY WARNING] DB Lookup failed: {e}")
-
         try:
             settings_url = f"{target_resource}/settings.json"
             settings_resp = await client.get(settings_url, timeout=10.0)

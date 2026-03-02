@@ -31,7 +31,7 @@ function App() {
       try {
         // Must use apiClient so /api prefix is applied
         const { default: apiClient } = await import('./api/apiClient');
-        const res = await apiClient.get('/cloner/auth-session');
+        const res = await apiClient.get('/auth/session');
         if (res.data && res.data.token_value) {
           setIsLoggedIn(true);
           sessionStorage.setItem('userRole', res.data.role || 'guest');
@@ -70,7 +70,7 @@ function App() {
           // Dynamic import to avoid breaking initial load
           const { default: apiClient } = await import('./api/apiClient');
           // Lightweight request to keep session and connection alive
-          await apiClient.get('/cloner/auth-session');
+          await apiClient.get('/auth/session');
           console.debug('Health Check Polling - isPaused: false, lastStatus: online');
         } catch (e) {
           console.warn('Health Check Polling - failed', e);
@@ -94,7 +94,7 @@ function App() {
   const handleLogout = async () => {
     try {
       const { default: apiClient } = await import('./api/apiClient');
-      await apiClient.post('/cloner/logout');
+      await apiClient.post('/auth/logout');
     } catch (e) {
       console.warn('Backend logout failed', e);
     }

@@ -1,10 +1,9 @@
 from fastapi import APIRouter, HTTPException, Body, Response, Request
 from typing import List, Dict, Any
 from app.core.cloner_service import (
-    get_captured_sites, 
-    get_live_account_sites, 
+    get_live_account_sites,
     fetch_site_config_live,
-    fetch_site_config, 
+    fetch_site_config,
     apply_config_to_site,
     apply_config_live,
     get_site_ssids,
@@ -14,11 +13,6 @@ from app.core.cloner_service import (
 from app.core.replay_service import replay_login
 
 router = APIRouter(prefix="/api/cloner", tags=["Site Cloner"])
-
-@router.get("/sites")
-async def list_sites():
-    """Get unique sites found in captured logs."""
-    return await get_captured_sites()
 
 @router.get("/live-sites")
 async def list_live_sites(request: Request):
@@ -92,14 +86,8 @@ async def cloner_login(
         raise HTTPException(status_code=401, detail=str(e))
 
 @router.post("/logout")
-async def cloner_logout(request: Request):
-    """Clear the session for the current token."""
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split(" ")[1]
-        from app.database.crud import delete_auth_session_by_token
-        await delete_auth_session_by_token(token)
-    
+async def cloner_logout():
+    """Stateless logout — session cleared client-side via sessionStorage."""
     return {"status": "success"}
 
 @router.post("/preview")

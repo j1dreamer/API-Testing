@@ -17,8 +17,8 @@ export const SiteProvider = ({ children }) => {
         setLoadingSites(true);
         try {
             const { default: apiClient } = await import('../api/apiClient');
-            const res = await apiClient.get('/cloner/live-sites');
-            const fetchedSites = Array.isArray(res.data) ? res.data : (res.data.elements || []);
+            const res = await apiClient.get('/overview/sites');
+            const fetchedSites = Array.isArray(res.data) ? res.data : (res.data.sites || []);
             setSites(fetchedSites);
             if (fetchedSites.length > 0 && !selectedSiteId) {
                 const firstSite = fetchedSites[0];

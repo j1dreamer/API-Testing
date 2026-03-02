@@ -66,7 +66,7 @@ const ApplicationSummaryCard = ({ dashboardData, loading }) => {
 
             <div className="flex-1 flex flex-col lg:flex-row items-center gap-8 mb-4 min-w-0 w-full">
                 {/* Chart Area */}
-                <div className="w-full lg:w-1/2 h-[200px] min-w-0 relative">
+                <div className="w-full lg:w-1/2 min-w-0 relative" style={{ height: 200 }}>
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -91,8 +91,8 @@ const ApplicationSummaryCard = ({ dashboardData, loading }) => {
                         </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Top</div>
-                        <div className="text-base font-black text-slate-800 dark:text-white tracking-tight">DPI</div>
+                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Total</div>
+                        <div className="text-base font-black text-slate-800 dark:text-white tracking-tight">24h</div>
                     </div>
                 </div>
 
