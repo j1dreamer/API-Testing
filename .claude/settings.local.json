@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs rm -rf)",
+      "Bash(find d:/AITC/API-Testing/sources/insight/backend -name \"*.pyc\" -delete)",
+      "Bash(find \"d:/AITC/API-Testing/sources/insight/backend\" -type d -name \"__pycache__\" -exec rm -rf {} +)",
+      "Bash(find \"d:/AITC/API-Testing/sources/insight/backend\" -name \"*.pyc\" -delete)",
+      "Bash(echo \"Remaining garbage: $?\")",
+      "Bash(find d:/AITC/API-Testing/sources/insight/backend -type d -name __pycache__ -exec rm -rf {} +)"
+    ]
+  }
+}
