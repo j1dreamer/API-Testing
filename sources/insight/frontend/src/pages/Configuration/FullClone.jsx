@@ -95,7 +95,7 @@ const Cloner = () => {
         const hasReadOnlyTarget = Array.from(selectedTargetIds).some(id => {
             const site = targetSites.find(s => s.siteId === id);
             const role = (site?.role || '').toLowerCase();
-            return !['administrator', 'operator'].includes(role);
+            return role !== 'administrator' && role !== 'admin';
         });
         if (hasReadOnlyTarget) return alert("Bạn không có quyền Administrator hoặc Operator trên Site đích đã chọn.");
 
@@ -134,12 +134,15 @@ const Cloner = () => {
         const role = (roleStr || 'UNKNOWN').toLowerCase();
         switch (role) {
             case 'administrator':
-                return { text: 'ADMINISTRATOR', classes: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50', canClone: true };
+            case 'admin':
+                return { text: 'ADMIN', classes: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50', canClone: true };
             case 'operator':
-                return { text: 'OPERATOR', classes: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50', canClone: true };
+            case 'op':
+                return { text: 'OPERATOR', classes: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-700/50', canClone: false };
             case 'delegate':
                 return { text: 'DELEGATE', classes: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700/50', canClone: false };
             case 'viewer':
+            case 'view':
                 return { text: 'VIEWER', classes: 'bg-slate-200 dark:bg-slate-700/40 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600/50', canClone: false };
             default:
                 return { text: role.toUpperCase(), classes: 'bg-slate-100 dark:bg-slate-800/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-700/50', canClone: false };
