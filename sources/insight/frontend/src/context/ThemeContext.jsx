@@ -9,11 +9,8 @@ export const ThemeProvider = ({ children }) => {
         if (savedTheme) {
             return savedTheme;
         }
-        // Fallback to system preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-        }
-        return 'light'; // default
+        // Default to dark regardless of system preference
+        return 'dark';
     });
 
     useEffect(() => {

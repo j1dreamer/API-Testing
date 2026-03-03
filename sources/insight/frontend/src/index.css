@@ -24,8 +24,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background-color: #0F172A;
+  color: rgba(255, 255, 255, 0.87);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 

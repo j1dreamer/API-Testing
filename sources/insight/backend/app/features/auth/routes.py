@@ -29,16 +29,33 @@ async def login(username: str = Body(..., embed=True), password: str = Body(...,
     if result.get("status") == "error":
         raise HTTPException(status_code=401, detail=result.get("message", "Login failed"))
 
-    from app.database.auth_crud import get_user_by_email
+    from app.database.auth_crud import get_user_by_email, create_user
+    from datetime import datetime, timezone
+
     user = await get_user_by_email(username)
-    internal_role = user.get("role", "guest") if user else "guest"
+    if user is None:
+        # First-time login: auto-register with default viewer role, pending approval.
+        # An admin must set isApproved=True before the user gets full access.
+        # NOTE: internalWebRole (role field here) controls access to this INSIGHT
+        # dashboard only. It is completely separate from the user's Aruba Instant On
+        # cloud role, which is determined per-site by the Aruba API itself.
+        await create_user({
+            "email":      username,
+            "role":       "viewer",   # internalWebRole — NOT an Aruba cloud role
+            "isApproved": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+        user = await get_user_by_email(username)
+
+    # internalWebRole: dictates which tabs/features this user sees in INSIGHT.
+    internal_web_role = user.get("role", "viewer") if user else "viewer"
 
     return {
         "status":        "success",
         "token_value":   result.get("data", {}).get("access_token"),
         "refresh_token": encrypt_credentials(username, password),
         "email":         username,
-        "role":          internal_role,
+        "role":          internal_web_role,
     }
 
 

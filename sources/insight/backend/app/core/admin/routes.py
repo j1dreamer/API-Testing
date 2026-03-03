@@ -27,8 +27,11 @@ async def get_all_users(current_user: Dict[str, Any] = Depends(require_admin)):
 async def update_user(user_id: str, payload: dict, current_user: Dict[str, Any] = Depends(require_admin)):
     role = payload.get("role")
     is_approved = payload.get("isApproved")
-    if role not in ["admin", "user", "guest"]:
-        raise HTTPException(status_code=400, detail="Invalid role")
+    # internalWebRole values — controls INSIGHT dashboard access only.
+    # NOT related to the user's role on Aruba Instant On cloud devices.
+    VALID_INTERNAL_WEB_ROLES = ["admin", "operator", "viewer", "user", "guest"]
+    if role not in VALID_INTERNAL_WEB_ROLES:
+        raise HTTPException(status_code=400, detail=f"Invalid internalWebRole. Must be one of: {VALID_INTERNAL_WEB_ROLES}")
 
     db = get_database()
     from bson.objectid import ObjectId

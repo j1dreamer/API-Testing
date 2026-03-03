@@ -15,10 +15,24 @@ import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
 
+// Guard for admin-only routes.
+// - No session  → App.jsx never renders the Router at all (shows Login instead).
+// - Has session, not admin → redirect to /overview, session stays alive.
+const AdminRoute = ({ userRole, children }) => {
+  if (userRole === 'admin') return children;
+  return <Navigate to="/overview" replace />;
+};
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isReady, setIsReady] = useState(false); // New state to prevent early rendering
+  const [isReady, setIsReady] = useState(false);
+  // userRole lives in React state so Sidebar and AdminRoute re-render reactively.
+  // Initialized from sessionStorage so the very first render already has the correct
+  // role — prevents the Admin tab from flashing hidden before verifySession completes.
+  const [userRole, setUserRole] = useState(
+    () => sessionStorage.getItem('userRole') || 'guest'
+  );
 
   useEffect(() => {
     const verifySession = async () => {
@@ -33,8 +47,12 @@ function App() {
         const { default: apiClient } = await import('./api/apiClient');
         const res = await apiClient.get('/auth/session');
         if (res.data && res.data.token_value) {
+          // /auth/session is a stateless echo — it does NOT return a role field.
+          // The authoritative role was written to sessionStorage by the login flow.
+          // Read from sessionStorage; do NOT overwrite it.
+          const role = sessionStorage.getItem('userRole') || 'guest';
           setIsLoggedIn(true);
-          sessionStorage.setItem('userRole', res.data.role || 'guest');
+          setUserRole(role);
         } else {
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('userRole');
@@ -84,9 +102,11 @@ function App() {
   }, [isLoggedIn]);
 
   const handleLoginSuccess = () => {
-    // Add a slightly longer delay after the Login component's own delay 
-    // to ensure React context is strictly sequential
+    // Login component already wrote userRole to sessionStorage before calling this.
+    // Read it synchronously here so React state is set in the same tick as isLoggedIn.
+    const role = sessionStorage.getItem('userRole') || 'guest';
     setTimeout(() => {
+      setUserRole(role);
       setIsLoggedIn(true);
     }, 500);
   };
@@ -120,7 +140,7 @@ function App() {
     <Router>
       <SettingsProvider>
         <SiteProvider>
-          <MainLayout onLogout={handleLogout}>
+          <MainLayout onLogout={handleLogout} userRole={userRole}>
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
               <Route path="/overview" element={<Overview />} />
@@ -131,7 +151,11 @@ function App() {
               <Route path="/devices" element={<Devices />} />
               <Route path="/applications" element={<Applications />} />
               <Route path="/configuration" element={<Configuration />} />
-              <Route path="/admin/logs" element={<AdminLogs />} />
+              <Route path="/admin/logs" element={
+                <AdminRoute userRole={userRole}>
+                  <AdminLogs />
+                </AdminRoute>
+              } />
               <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>
           </MainLayout>
