@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from app.features.overview.service import overview_service
 
-router = APIRouter(prefix="/api/overview", tags=["Overview"])
+router = APIRouter(prefix="/api/v1/overview", tags=["Overview"])
 
 
 @router.get("/sites")

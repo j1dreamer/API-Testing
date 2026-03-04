@@ -9,7 +9,7 @@ Endpoints:
 from fastapi import APIRouter, HTTPException, Request
 from app.features.config.service import config_service
 
-router = APIRouter(prefix="/api/config", tags=["Config"])
+router = APIRouter(prefix="/api/v1/config", tags=["Config"])
 
 
 def _get_token(request: Request) -> str:

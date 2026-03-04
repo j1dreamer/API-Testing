@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Body, HTTPException, Request
-from app.core.fernet import encrypt_credentials, decrypt_credentials
-from app.core.replay_service import replay_login
+from app.shared.fernet import encrypt_credentials, decrypt_credentials
+from app.features.replay.service import replay_login
 
-router = APIRouter(prefix="/api/auth", tags=["Stateless Auth"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Stateless Auth"])
 
 
 @router.get("/session")
@@ -21,7 +21,7 @@ async def session(request: Request):
 @router.post("/login")
 async def login(username: str = Body(..., embed=True), password: str = Body(..., embed=True)):
     """Đăng nhập: trả về access_token + Fernet refresh_token."""
-    from app.core.allowed_emails import is_email_allowed
+    from app.shared.allowed_emails import is_email_allowed
     if not is_email_allowed(username):
         raise HTTPException(status_code=401, detail="Email không có quyền truy cập.")
 
