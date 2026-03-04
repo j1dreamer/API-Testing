@@ -23,4 +23,5 @@ __pycache__/
 .vscode/
 /sources/capture-toolkit/
 /sources/capture-toolkit/
+# Ignore Claude Code configurations and skills
 .claude/
