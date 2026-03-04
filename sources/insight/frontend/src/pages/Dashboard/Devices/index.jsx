@@ -67,7 +67,7 @@ const Devices = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
     const [healthFilter, setHealthFilter] = useState('all');
-    const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+    const [sortConfig, setSortConfig] = useState({ key: 'clients', direction: 'desc' });
 
     const { selectedSiteId, sites, fetchSites } = useSite();
 
@@ -151,8 +151,8 @@ const Devices = () => {
                     valB = b.uptimeInSeconds || 0;
                     break;
                 case 'clients':
-                    valA = a.connectedClients || a.wiredClientsCount || 0;
-                    valB = b.connectedClients || b.wiredClientsCount || 0;
+                    valA = getClientCount(a);
+                    valB = getClientCount(b);
                     break;
                 case 'ip':
                     valA = (a.ipAddress || '');

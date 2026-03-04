@@ -109,7 +109,7 @@ const SiteDetail = () => {
     const wrTotal      = data?.devicesOverview?.wifiRouters?.total  || 0;
     const gwTotal      = data?.devicesOverview?.gateways?.total     || 0;
     const totalDevices   = apTotal + swTotal + stTotal + wrTotal + gwTotal;
-    const offlineDevices = totalDevices - onlineDevices;
+    const offlineDevices = Math.max(0, totalDevices - onlineDevices);
 
     const healthConditions = data?.healthOverview?.currentScore?.conditionsCount || 0;
 

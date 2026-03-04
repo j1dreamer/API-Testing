@@ -22,6 +22,6 @@ if INTERNAL_APP_AUTH == _DEFAULT_KEY:
 # Super Admins (comma-separated list of emails)
 SUPER_ADMIN_EMAILS = [
     email.strip()
-    for email in os.getenv("SUPER_ADMIN_EMAILS", "admin@example.com").split(",")
+    for email in os.getenv("SUPER_ADMIN_EMAILS", "").split(",")
     if email.strip()
 ]

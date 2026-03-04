@@ -1,33 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Wifi, Users, ArrowUp, ArrowDown } from 'lucide-react';
+import { formatBytes } from './dataProcessor';
 
 // --- Helpers ---
-const HEALTH_DOT = {
-    good:    'bg-emerald-500',
-    warning: 'bg-amber-500',
-    poor:    'bg-rose-500',
-    unknown: 'bg-slate-600',
+const HEALTH_CONFIG = {
+    good:    { dot: 'bg-emerald-500', label: 'Good',    text: 'text-emerald-400' },
+    warning: { dot: 'bg-amber-500',   label: 'Warning', text: 'text-amber-400' },
+    poor:    { dot: 'bg-rose-500',    label: 'Poor',    text: 'text-rose-400' },
+    none:    { dot: 'bg-slate-600',   label: 'None',    text: 'text-slate-500' },
 };
+const getHealth = (h) => HEALTH_CONFIG[h?.toLowerCase()] || HEALTH_CONFIG.none;
 
-const formatBytes = (bytes) => {
-    if (bytes == null) return '—';
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
+const USAGE_CONFIG = {
+    employee:   { label: 'Employee', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' },
+    guest:      { label: 'Guest',    color: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+    management: { label: 'Mgmt',     color: 'bg-slate-700 text-slate-300 border-white/10' },
 };
-
-const BAND_LABEL = {
-    '5ghz':   '5 GHz',
-    '2.4ghz': '2.4 GHz',
-    '6ghz':   '6 GHz',
-};
-const getBandLabel = (band) => BAND_LABEL[band?.toLowerCase()] || band || '—';
+const getUsage = (u) =>
+    USAGE_CONFIG[u?.toLowerCase()] || { label: u || 'Employee', color: 'bg-slate-700 text-slate-400 border-white/5' };
 
 // --- Component ---
-const WirelessTable = ({ data, sortConfig, onSort, loading }) => {
+const WirelessTable = ({ data, loading }) => {
+    const [sortConfig, setSortConfig] = useState({ key: 'clients', direction: 'desc' });
+
+    const handleSort = (key) => {
+        setSortConfig(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+        }));
+    };
+
+    const sorted = [...data].sort((a, b) => {
+        let valA, valB;
+        switch (sortConfig.key) {
+            case 'name':    valA = a.name.toLowerCase();  valB = b.name.toLowerCase(); break;
+            case 'clients': valA = a.clients;             valB = b.clients;            break;
+            case 'vlan':    valA = Number(a.vlanId) || 0; valB = Number(b.vlanId) || 0; break;
+            case 'health':  valA = a.health || '';        valB = b.health || '';        break;
+            default: return 0;
+        }
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+
     const SortIcon = ({ column }) => {
-        if (sortConfig?.key !== column)
+        if (sortConfig.key !== column)
             return <ArrowDown size={12} className="opacity-20 ml-1 inline" />;
         return sortConfig.direction === 'asc'
             ? <ArrowUp size={12} className="text-indigo-500 ml-1 inline" />
@@ -36,62 +54,57 @@ const WirelessTable = ({ data, sortConfig, onSort, loading }) => {
 
     return (
         <div className="bg-slate-900 rounded-[2.5rem] shadow-2xl border border-white/5 overflow-hidden w-full">
-            <div className="max-h-[calc(100vh-360px)] overflow-auto custom-scrollbar">
+            <div className="max-h-[calc(100vh-400px)] overflow-auto custom-scrollbar">
                 <table className="w-full min-w-[900px] text-left text-sm whitespace-nowrap">
                     <thead className="text-slate-500 border-b border-white/5 sticky top-0 z-10 bg-slate-900">
                         <tr>
-                            <th
-                                onClick={() => onSort?.('name')}
-                                className="px-8 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors min-w-[220px]"
-                            >
+                            <th onClick={() => handleSort('name')} className="px-8 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors min-w-[220px]">
                                 Network <SortIcon column="name" />
                             </th>
-                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[100px]">
+                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[90px]">
                                 State
                             </th>
-                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[100px]">
-                                Health
+                            <th onClick={() => handleSort('health')} className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors min-w-[100px]">
+                                Health <SortIcon column="health" />
                             </th>
-                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[100px]">
+                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[110px]">
+                                Usage
+                            </th>
+                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[150px]">
                                 Band
                             </th>
                             <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[100px]">
                                 Security
                             </th>
-                            <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[100px]">
-                                VLAN
+                            <th onClick={() => handleSort('vlan')} className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors min-w-[90px]">
+                                VLAN <SortIcon column="vlan" />
                             </th>
                             <th className="px-6 py-5 font-black uppercase tracking-widest text-[10px] min-w-[120px]">
                                 24h Usage
                             </th>
-                            <th
-                                onClick={() => onSort?.('clients')}
-                                className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors text-right min-w-[100px]"
-                            >
+                            <th onClick={() => handleSort('clients')} className="px-6 py-5 font-black uppercase tracking-widest text-[10px] cursor-pointer hover:text-white transition-colors text-right min-w-[100px]">
                                 Clients <SortIcon column="clients" />
                             </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 text-slate-300">
-                        {/* Skeleton rows while loading */}
-                        {loading && Array.from({ length: 5 }).map((_, i) => (
+                        {loading && Array.from({ length: 4 }).map((_, i) => (
                             <tr key={`wskel-${i}`} className="animate-pulse">
                                 <td className="px-8 py-5"><div className="h-4 bg-slate-800 rounded w-40" /></td>
                                 <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-16" /></td>
                                 <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-16" /></td>
-                                <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-16" /></td>
+                                <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-20" /></td>
+                                <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-24" /></td>
                                 <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-16" /></td>
                                 <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-12" /></td>
-                                <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-20" /></td>
+                                <td className="px-6 py-5"><div className="h-4 bg-slate-800 rounded w-16" /></td>
                                 <td className="px-6 py-5 text-right"><div className="h-4 bg-slate-800 rounded w-10 ml-auto" /></td>
                             </tr>
                         ))}
 
-                        {!loading && data.map(ssid => {
-                            const dotClass = HEALTH_DOT[ssid.health] || HEALTH_DOT.unknown;
-                            const healthLabel = ssid.health
-                                ? ssid.health.charAt(0).toUpperCase() + ssid.health.slice(1)
-                                : 'Unknown';
+                        {!loading && sorted.map(ssid => {
+                            const health = getHealth(ssid.health);
+                            const usageCfg = getUsage(ssid.usage);
                             return (
                                 <tr key={ssid.id} className="hover:bg-white/[0.02] transition-colors group">
                                     {/* Network Name */}
@@ -126,16 +139,23 @@ const WirelessTable = ({ data, sortConfig, onSort, loading }) => {
 
                                     {/* Health */}
                                     <td className="px-6 py-5">
-                                        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
-                                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dotClass}`} />
-                                            {healthLabel}
+                                        <span className={`flex items-center gap-1.5 text-xs font-bold ${health.text}`}>
+                                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${health.dot}`} />
+                                            {health.label}
+                                        </span>
+                                    </td>
+
+                                    {/* Usage (Employee/Guest) */}
+                                    <td className="px-6 py-5">
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${usageCfg.color}`}>
+                                            {usageCfg.label}
                                         </span>
                                     </td>
 
                                     {/* Band */}
                                     <td className="px-6 py-5">
-                                        <span className="text-xs font-bold text-slate-400">
-                                            {getBandLabel(ssid.band)}
+                                        <span className="text-xs font-bold text-slate-300">
+                                            {ssid.band || '—'}
                                         </span>
                                     </td>
 
@@ -156,7 +176,7 @@ const WirelessTable = ({ data, sortConfig, onSort, loading }) => {
                                     {/* 24h Usage */}
                                     <td className="px-6 py-5">
                                         <span className="text-xs font-bold text-slate-500">
-                                            {formatBytes(ssid.usage24h)}
+                                            {ssid.usage24h != null ? formatBytes(ssid.usage24h) : '—'}
                                         </span>
                                     </td>
 
@@ -179,13 +199,13 @@ const WirelessTable = ({ data, sortConfig, onSort, loading }) => {
 
                         {!loading && data.length === 0 && (
                             <tr>
-                                <td colSpan="8" className="px-6 py-24 text-center text-slate-500">
+                                <td colSpan="9" className="px-6 py-16 text-center text-slate-500">
                                     <div className="flex flex-col items-center">
-                                        <div className="p-6 bg-slate-800 rounded-3xl mb-6 opacity-20">
-                                            <Wifi size={64} className="text-slate-400" />
+                                        <div className="p-6 bg-slate-800 rounded-3xl mb-4 opacity-20">
+                                            <Wifi size={48} className="text-slate-400" />
                                         </div>
-                                        <p className="text-xl font-black text-slate-700 uppercase tracking-[0.2em]">No Wireless Networks</p>
-                                        <p className="text-xs text-slate-600 mt-3 font-bold uppercase tracking-widest">No SSIDs found for this site</p>
+                                        <p className="text-lg font-black text-slate-700 uppercase tracking-[0.2em]">No Wireless Networks</p>
+                                        <p className="text-xs text-slate-600 mt-2 font-bold uppercase tracking-widest">No SSIDs found for this site</p>
                                     </div>
                                 </td>
                             </tr>
