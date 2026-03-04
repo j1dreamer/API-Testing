@@ -10,7 +10,7 @@ from app.features.cloner.service import (
     sync_ssids_passwords,
     sync_ssids_create
 )
-from app.core.replay_service import replay_login
+from app.features.replay.service import replay_login
 from app.features.cloner import service as cloner_service
 
 router = APIRouter(prefix="/api/v1/cloner", tags=["Site Cloner"])
@@ -53,13 +53,12 @@ async def cloner_login(
     print("\n" + "!"*60)
     print(f"DEBUG RESTART: LOGIN FOR {username} - STATELESS MODE")
     print("!"*60 + "\n")
-    from app.core.allowed_emails import is_email_allowed
+    from app.shared.allowed_emails import is_email_allowed
     if not is_email_allowed(username):
         raise HTTPException(status_code=401, detail="Email không có quyền truy cập vào hệ thống Insight.")
 
     try:
-        from app.core.replay_service import replay_login
-        import app.core.replay_service as rs
+        from app.features.replay.service import replay_login
         token = await replay_login(username, password)
         if token.get("status") == "error":
             raise HTTPException(status_code=401, detail=token.get("message", "Login failed"))

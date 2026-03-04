@@ -10,7 +10,7 @@ Kiến trúc Stateless (stateless_architecture.md):
 from typing import List, Dict, Any
 
 from fastapi import HTTPException
-from app.services.aruba import aruba_service
+from app.shared.aruba import aruba_service
 
 # Map Aruba role verbatim → shorthand nội bộ
 _ARUBA_ROLE_MAP: Dict[str, str] = {

@@ -3,7 +3,6 @@ import json
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.database.connection import get_database
-from app.core import replay_service
 
 async def get_live_account_sites(aruba_token: str) -> List[Dict[str, Any]]:
     """Fetch all live sites for the provided token."""

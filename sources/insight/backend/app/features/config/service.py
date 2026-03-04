@@ -27,7 +27,7 @@ Mapping JSON keys ↔ UI labels (đảm bảo 100% alignment):
 from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException
-from app.services.aruba import aruba_service
+from app.shared.aruba import aruba_service
 
 # Endpoint fallback chain (mới → cũ)
 _NETS_ENDPOINTS = [

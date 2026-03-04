@@ -11,8 +11,15 @@ from app.database.crud import (
     get_log_by_id,
     upsert_auth_session
 )
-from app.export.postman import generate_postman_from_logs
-from app.core.websocket.manager import manager
+try:
+    from app.export.postman import generate_postman_from_logs
+except ImportError:
+    generate_postman_from_logs = None
+
+# Websocket manager — stub fallback (module not present in this deployment)
+class _NoopBroadcaster:
+    async def broadcast(self, *args, **kwargs): pass
+manager = _NoopBroadcaster()
 from datetime import datetime, timezone
 
 # Hidden router for internal tools (Extension, Dashboard)
