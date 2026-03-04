@@ -1,27 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
+import GlobalLayout from './layouts/GlobalLayout';
+import SiteLayout from './layouts/SiteLayout';
 import Login from './pages/Login';
-import Overview from './pages/Dashboard/Overview';
-import Health from './pages/Dashboard/Health';
-import Devices from './pages/Dashboard/Devices';
-import Alerts from './pages/Dashboard/Alerts';
-import Clients from './pages/Dashboard/Clients';
-import Networks from './pages/Dashboard/Networks';
-import Applications from './pages/Dashboard/Applications';
+import GlobalDashboard from './pages/Dashboard/GlobalDashboard';
+import SiteDetail from './pages/Dashboard/SiteDetail';
 import Configuration from './pages/Configuration';
 import AdminLogs from './pages/Admin/Logs';
-import SiteDetail from './pages/Dashboard/SiteDetail';
 import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
 
 // Guard for admin-only routes.
 // - No session  → App.jsx never renders the Router at all (shows Login instead).
-// - Has session, not admin → redirect to /overview, session stays alive.
+// - Has session, not admin → redirect to /dashboard, session stays alive.
 const AdminRoute = ({ userRole, children }) => {
   if (userRole === 'admin') return children;
-  return <Navigate to="/overview" replace />;
+  return <Navigate to="/dashboard" replace />;
 };
 
 function App() {
@@ -141,26 +136,26 @@ function App() {
     <Router>
       <SettingsProvider>
         <SiteProvider>
-          <MainLayout onLogout={handleLogout} userRole={userRole}>
-            <Routes>
-              <Route path="/" element={<Navigate to="/overview" replace />} />
-              <Route path="/overview" element={<Overview />} />
-              <Route path="/overview/:siteId" element={<SiteDetail />} />
-              <Route path="/health" element={<Health />} />
-              <Route path="/alerts" element={<Alerts />} />
-              <Route path="/clients" element={<Clients />} />
-              <Route path="/networks" element={<Networks />} />
-              <Route path="/devices" element={<Devices />} />
-              <Route path="/applications" element={<Applications />} />
-              <Route path="/configuration" element={<Configuration />} />
+          <Routes>
+            {/* Global routes — use GlobalLayout */}
+            <Route element={<GlobalLayout onLogout={handleLogout} userRole={userRole} />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<GlobalDashboard />} />
+              <Route path="/config" element={<Configuration />} />
               <Route path="/admin/logs" element={
                 <AdminRoute userRole={userRole}>
                   <AdminLogs />
                 </AdminRoute>
               } />
-              <Route path="*" element={<Navigate to="/overview" replace />} />
-            </Routes>
-          </MainLayout>
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Route>
+
+            {/* Site-specific routes — use SiteLayout */}
+            <Route path="/site/:siteId" element={<SiteLayout onLogout={handleLogout} userRole={userRole} />}>
+              <Route index element={<SiteDetail />} />
+              <Route path="cloner" element={<Configuration />} />
+            </Route>
+          </Routes>
         </SiteProvider>
       </SettingsProvider>
     </Router>
