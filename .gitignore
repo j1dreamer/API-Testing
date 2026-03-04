@@ -1,5 +1,7 @@
 # Ignore all python experimental scripts at root
 /*.py
+#env
+.env
 
 # Virtual environments
 venv/
@@ -25,3 +27,5 @@ __pycache__/
 /sources/capture-toolkit/
 # Ignore Claude Code configurations and skills
 .claude/
+#tempo files
+tempo-py/

@@ -11,6 +11,7 @@ import Networks from './pages/Dashboard/Networks';
 import Applications from './pages/Dashboard/Applications';
 import Configuration from './pages/Configuration';
 import AdminLogs from './pages/Admin/Logs';
+import SiteDetail from './pages/Dashboard/SiteDetail';
 import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
@@ -144,6 +145,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/overview" replace />} />
               <Route path="/overview" element={<Overview />} />
+              <Route path="/overview/:siteId" element={<SiteDetail />} />
               <Route path="/health" element={<Health />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/clients" element={<Clients />} />

@@ -82,11 +82,17 @@ class OverviewService:
                 aruba_role_raw: str = node.get("userRoleOnSite") or ""
                 raw_role: str = aruba_role_raw.strip().lower()
                 sites.append({
-                    "siteId":           node.get("id") or node.get("siteId"),
-                    "siteName":         node.get("name") or node.get("siteName", "Unknown"),
-                    "role":             _ARUBA_ROLE_MAP.get(raw_role, "view"),
-                    "aruba_role_raw":   aruba_role_raw if aruba_role_raw else "unknown",
-                    "insight_app_role": insight_app_role,
+                    "siteId":                node.get("id") or node.get("siteId"),
+                    "siteName":              node.get("name") or node.get("siteName", "Unknown"),
+                    "role":                  _ARUBA_ROLE_MAP.get(raw_role, "view"),
+                    "aruba_role_raw":        aruba_role_raw if aruba_role_raw else "unknown",
+                    "insight_app_role":      insight_app_role,
+                    # Enriched fields for Sites Grid UI
+                    "status":                node.get("status", "up"),
+                    "healthScore":           node.get("currentHealthScore", {}),
+                    "healthScoreTrend":      node.get("healthScoreTrend", "stable"),
+                    "activeAlertsCounters":  node.get("activeAlertsCounters", {}),
+                    "historyDurationSeconds": node.get("historyDurationSeconds", 86400),
                 })
 
             return sites
