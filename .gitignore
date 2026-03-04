@@ -1,7 +1,8 @@
 # Ignore all python experimental scripts at root
 /*.py
-#env
+# Environment files — never commit secrets
 .env
+sources/insight/.env
 
 # Virtual environments
 venv/
@@ -29,3 +30,7 @@ __pycache__/
 .claude/
 #tempo files
 tempo-py/
+#ignore docs and tasks
+/docs/plan
+/docs/tasks
+

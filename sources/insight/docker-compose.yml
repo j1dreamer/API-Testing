@@ -2,15 +2,13 @@ version: '3.8'
 
 services:
   backend:
-    build: 
+    build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: insight_backend
     restart: unless-stopped
-    environment:
-      - MONGODB_URL=mongodb://host.docker.internal:27018
-      - DATABASE_NAME=insight
-      - SUPER_ADMIN_EMAILS=cuong.nguyen@aitc-jsc.com
+    env_file:
+      - .env
     ports:
       - "3003:8001"
     extra_hosts:
