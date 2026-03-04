@@ -3,12 +3,12 @@ version: '3.8'
 services:
   backend:
     build:
-      context: ./backend
+      context: ./sources/insight/backend
       dockerfile: Dockerfile
     container_name: insight_backend
     restart: unless-stopped
     env_file:
-      - .env
+      - ./sources/insight/.env
     ports:
       - "3003:8001"
     extra_hosts:
@@ -18,7 +18,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./sources/insight/frontend
       dockerfile: Dockerfile
     container_name: insight_frontend
     restart: unless-stopped
