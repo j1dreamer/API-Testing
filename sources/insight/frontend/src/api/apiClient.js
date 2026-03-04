@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-    baseURL: '/api' // All requests must start with /api for backend router to catch them
+    baseURL: '/api/v1' // Feature-first proxy-ready architecture
 });
 
 // Request Interceptor: Attach Token & Headers
@@ -86,7 +86,7 @@ apiClient.interceptors.response.use(
                 if (!refreshToken) throw new Error("Không tìm thấy refresh_token trong sessionStorage");
 
                 // Dùng axios gốc (không qua apiClient) để tránh trigger interceptor lần nữa
-                const res = await axios.post('/api/auth/refresh', { refresh_token: refreshToken });
+                const res = await axios.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
                 const newToken = res.data?.token_value;
                 const newRefresh = res.data?.refresh_token;
 
@@ -108,7 +108,7 @@ apiClient.interceptors.response.use(
                     console.error(`Phiên hết hạn (${status}) và refresh thất bại. Đang đăng xuất...`);
                     sessionStorage.clear();
                     localStorage.clear();
-                    fetch('/api/auth/logout', { method: 'POST' }).finally(() => {
+                    fetch('/api/v1/auth/logout', { method: 'POST' }).finally(() => {
                         if (window.location.pathname === '/') {
                             window.location.reload();
                         } else {

@@ -51,7 +51,7 @@ function Capture() {
                 status: filters.status || undefined,
                 domain: filters.domain || undefined
             };
-            const res = await apiClient.get('/api/logs', { params });
+            const res = await apiClient.get('/logs', { params });
             setLogs(res.data.logs);
             setTotal(res.data.total);
         } catch (error) {
@@ -84,7 +84,7 @@ function Capture() {
     const handleClearLogs = async () => {
         if (!confirm("Are you sure you want to wipe ALL captured logs? This cannot be undone.")) return;
         try {
-            await apiClient.delete('/api/logs');
+            await apiClient.delete('/logs');
             setLogs([]);
             setTotal(0);
         } catch (err) {
