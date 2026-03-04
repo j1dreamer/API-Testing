@@ -9,17 +9,19 @@
       (function() {
         try {
           var savedTheme = localStorage.getItem('theme');
-          var isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (savedTheme === 'dark' || (!savedTheme && isSystemDark)) {
+          // Default to dark if no saved preference
+          if (savedTheme !== 'light') {
             document.documentElement.classList.add('dark');
           } else {
             document.documentElement.classList.remove('dark');
           }
-        } catch (e) {}
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
       })();
     </script>
-    <script type="module" crossorigin src="/assets/index-CQXP2aAD.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DbHsms6c.css">
+    <script type="module" crossorigin src="/assets/index-DdlpgUpl.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DlieGw1a.css">
   </head>
   <body>
     <div id="root"></div>
