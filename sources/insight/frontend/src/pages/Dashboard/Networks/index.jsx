@@ -4,19 +4,21 @@ import apiClient from '../../../api/apiClient';
 import { useSite } from '../../../context/SiteContext';
 import { processWiredNetworks } from './dataProcessor';
 import NetworkTable from './NetworkTable';
+import WirelessTable from './WirelessTable';
 import useIntervalFetch from '../../../hooks/useIntervalFetch';
 import { useSettings } from '../../../context/SettingsContext';
 import SyncIndicator from '../../../components/SyncIndicator';
 
 const Networks = () => {
-    const [networksData, setNetworksData]   = useState([]);
-    const [loading, setLoading]             = useState(true);
-    const [isRefreshing, setIsRefreshing]   = useState(false);
-    const [error, setError]                 = useState('');
-    const [lastUpdated, setLastUpdated]     = useState(null);
-    const [searchTerm, setSearchTerm]       = useState('');
-    const [typeFilter, setTypeFilter]       = useState('all');   // 'all' | 'employee' | 'guest'
-    const [sortConfig, setSortConfig]       = useState({ key: 'vlan', direction: 'asc' });
+    const [networksData, setNetworksData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [error, setError] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('all');   // 'all' | 'employee' | 'guest'
+    const [sortConfig, setSortConfig] = useState({ key: 'vlan', direction: 'asc' });
+    const [activeTab, setActiveTab] = useState('all'); // 'all' | 'wireless' | 'wired'
 
     const { selectedSiteId, sites, fetchSites } = useSite();
     const { isAutoRefreshEnabled } = useSettings();
@@ -37,7 +39,7 @@ const Networks = () => {
         setError('');
         try {
             // Single call — wirelessNetworks + wirelessClientsCount are embedded in the response
-            const res = await apiClient.get(`/proxy/api/sites/${siteId}/wiredNetworks`);
+            const res = await apiClient.get(`/replay/api/sites/${siteId}/wiredNetworks`);
             const processed = processWiredNetworks(res.data);
             setNetworksData(processed);
             setLastUpdated(new Date());
@@ -112,8 +114,32 @@ const Networks = () => {
         return result;
     }, [networksData, searchTerm, typeFilter, sortConfig]);
 
+    // Flatten SSIDs from wired network rows into wireless display rows
+    const wirelessData = useMemo(() => {
+        let rows = networksData.flatMap(net =>
+            net.ssids.map(ssid => ({
+                id:        `${net.id}-${ssid.id}`,
+                name:      ssid.name,
+                isEnabled: ssid.isEnabled,
+                health:    'unknown',
+                band:      ssid.band,
+                security:  ssid.security,
+                vlanId:    net.vlanId,
+                clients:   ssid.clients,
+                usage24h:  null,
+            }))
+        );
+
+        if (searchTerm) {
+            const q = searchTerm.toLowerCase();
+            rows = rows.filter(r => r.name.toLowerCase().includes(q));
+        }
+
+        return rows;
+    }, [networksData, searchTerm]);
+
     const totalClients = networksData.reduce((sum, n) => sum + n.totalClients, 0);
-    const activeCount  = networksData.filter(n => n.isEnabled).length;
+    const activeCount = networksData.filter(n => n.isEnabled).length;
 
     return (
         <div className="p-8 pb-32 font-sans overflow-hidden bg-slate-950 min-h-screen">
@@ -167,15 +193,22 @@ const Networks = () => {
                     />
                 </div>
 
-                <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="h-14 bg-slate-900 border border-white/5 rounded-2xl px-5 text-white text-sm font-bold focus:outline-none focus:border-indigo-500/50 appearance-none min-w-[160px] cursor-pointer hover:bg-slate-800/50 transition-all shadow-xl"
-                >
-                    <option value="all">All Types</option>
-                    <option value="employee">Employee</option>
-                    <option value="guest">Guest</option>
-                </select>
+                {/* Tabs */}
+                <div className="flex items-center gap-1 bg-slate-900 border border-white/5 rounded-2xl p-1 shadow-xl">
+                    {['all', 'wireless', 'wired'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                                activeTab === tab
+                                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                    : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                            }`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {error && (
@@ -185,12 +218,41 @@ const Networks = () => {
                 </div>
             )}
 
-            <NetworkTable
-                data={filteredAndSortedData}
-                sortConfig={sortConfig}
-                onSort={handleSort}
-                loading={loading}
-            />
+            {/* Wireless section */}
+            {(activeTab === 'all' || activeTab === 'wireless') && (
+                <div className="mb-8">
+                    {activeTab === 'all' && (
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3 px-1 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                            Wireless Networks
+                        </h2>
+                    )}
+                    <WirelessTable
+                        data={wirelessData}
+                        sortConfig={null}
+                        onSort={null}
+                        loading={loading}
+                    />
+                </div>
+            )}
+
+            {/* Wired section */}
+            {(activeTab === 'all' || activeTab === 'wired') && (
+                <div>
+                    {activeTab === 'all' && (
+                        <h2 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3 px-1 flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                            Wired Networks
+                        </h2>
+                    )}
+                    <NetworkTable
+                        data={filteredAndSortedData}
+                        sortConfig={sortConfig}
+                        onSort={handleSort}
+                        loading={loading}
+                    />
+                </div>
+            )}
         </div>
     );
 };

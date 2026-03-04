@@ -8,14 +8,14 @@ import SyncIndicator from '../../../components/SyncIndicator';
 
 // --- Constants ---
 const ALERT_TYPE_MAP = {
-    'watchlistEntityDown':  'Client Offline',
-    'siteDown':             'Site Connection Lost',
-    'apDown':               'Access Point Down',
-    'switchDown':           'Switch Down',
-    'apRadioDown':          'Radio Interface Down',
-    'clientRoam':           'Client Roaming',
-    'rogue':                'Rogue AP Detected',
-    'interference':         'RF Interference',
+    'watchlistEntityDown': 'Client Offline',
+    'siteDown': 'Site Connection Lost',
+    'apDown': 'Access Point Down',
+    'switchDown': 'Switch Down',
+    'apRadioDown': 'Radio Interface Down',
+    'clientRoam': 'Client Roaming',
+    'rogue': 'Rogue AP Detected',
+    'interference': 'RF Interference',
 };
 
 // --- Helpers ---
@@ -24,22 +24,22 @@ const getAlertLabel = (type) => ALERT_TYPE_MAP[type] || type || 'Unknown Alert';
 const formatTimestamp = (unixSec) => {
     if (!unixSec) return '—';
     const d = new Date(unixSec * 1000);
-    const dd   = String(d.getDate()).padStart(2, '0');
-    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    const hh   = String(d.getHours()).padStart(2, '0');
-    const min  = String(d.getMinutes()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
     return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 };
 
 const formatDuration = (totalSeconds) => {
     if (!totalSeconds && totalSeconds !== 0) return '—';
     const s = Math.abs(totalSeconds);
-    if (s < 60)   return `${s}s ago`;
+    if (s < 60) return `${s}s ago`;
     if (s < 3600) return `${Math.floor(s / 60)}m ago`;
     if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
     const days = Math.floor(s / 86400);
-    const hrs  = Math.floor((s % 86400) / 3600);
+    const hrs = Math.floor((s % 86400) / 3600);
     return hrs > 0 ? `${days}d ${hrs}h ago` : `${days} days ago`;
 };
 
@@ -83,11 +83,10 @@ const SeverityBadge = ({ severity }) => {
 const FilterChip = ({ label, active, onClick }) => (
     <button
         onClick={onClick}
-        className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-            active
+        className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${active
                 ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/20'
                 : 'bg-slate-900 border-white/5 text-slate-400 hover:text-white hover:border-white/20'
-        }`}
+            }`}
     >
         {label}
     </button>
@@ -95,15 +94,15 @@ const FilterChip = ({ label, active, onClick }) => (
 
 // --- Main Component ---
 const Alerts = () => {
-    const [rawAlerts, setRawAlerts]       = useState([]);
-    const [loading, setLoading]           = useState(true);
+    const [rawAlerts, setRawAlerts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
-    const [error, setError]               = useState('');
-    const [lastUpdated, setLastUpdated]   = useState(null);
+    const [error, setError] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(null);
 
     // Filters
     const [severityFilter, setSeverityFilter] = useState('all');   // 'all' | 'major' | 'minor'
-    const [statusFilter, setStatusFilter]     = useState('all');   // 'all' | 'active' | 'cleared'
+    const [statusFilter, setStatusFilter] = useState('all');   // 'all' | 'active' | 'cleared'
 
     const { selectedSiteId, sites, fetchSites } = useSite();
     const { isAutoRefreshEnabled } = useSettings();
@@ -124,7 +123,7 @@ const Alerts = () => {
         else setIsRefreshing(true);
         setError('');
         try {
-            const res = await apiClient.get(`/proxy/api/sites/${selectedSiteId}/alerts`);
+            const res = await apiClient.get(`/replay/api/sites/${selectedSiteId}/alerts`);
             console.log('[Alerts] Raw response:', res.data);
 
             // Aruba returns { elements: [...] } or a bare array
@@ -168,8 +167,8 @@ const Alerts = () => {
         return result;
     }, [rawAlerts, severityFilter, statusFilter]);
 
-    const activeCount  = rawAlerts.filter(a => a.clearedTime == null).length;
-    const majorCount   = rawAlerts.filter(a => a.severity?.toLowerCase() === 'major').length;
+    const activeCount = rawAlerts.filter(a => a.clearedTime == null).length;
+    const majorCount = rawAlerts.filter(a => a.severity?.toLowerCase() === 'major').length;
 
     return (
         <div className="p-8 pb-32 font-sans overflow-hidden bg-slate-950 min-h-screen">
@@ -217,7 +216,7 @@ const Alerts = () => {
                     <Filter size={14} className="text-slate-500" />
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Severity</span>
                 </div>
-                <FilterChip label="All"   active={severityFilter === 'all'}   onClick={() => setSeverityFilter('all')} />
+                <FilterChip label="All" active={severityFilter === 'all'} onClick={() => setSeverityFilter('all')} />
                 <FilterChip label="Major" active={severityFilter === 'major'} onClick={() => setSeverityFilter('major')} />
                 <FilterChip label="Minor" active={severityFilter === 'minor'} onClick={() => setSeverityFilter('minor')} />
 
@@ -226,8 +225,8 @@ const Alerts = () => {
                 <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</span>
                 </div>
-                <FilterChip label="All"     active={statusFilter === 'all'}     onClick={() => setStatusFilter('all')} />
-                <FilterChip label="Active"  active={statusFilter === 'active'}  onClick={() => setStatusFilter('active')} />
+                <FilterChip label="All" active={statusFilter === 'all'} onClick={() => setStatusFilter('all')} />
+                <FilterChip label="Active" active={statusFilter === 'active'} onClick={() => setStatusFilter('active')} />
                 <FilterChip label="Cleared" active={statusFilter === 'cleared'} onClick={() => setStatusFilter('cleared')} />
             </div>
 
@@ -270,7 +269,7 @@ const Alerts = () => {
 
                             {/* Alert rows */}
                             {!loading && displayAlerts.map((alert) => {
-                                const isActive  = alert.clearedTime == null;
+                                const isActive = alert.clearedTime == null;
                                 const clientName = getClientName(alert);
                                 return (
                                     <tr

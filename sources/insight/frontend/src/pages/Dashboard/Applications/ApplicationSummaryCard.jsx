@@ -66,30 +66,32 @@ const ApplicationSummaryCard = ({ dashboardData, loading }) => {
 
             <div className="flex-1 flex flex-col lg:flex-row items-center gap-8 mb-4 min-w-0 w-full">
                 {/* Chart Area */}
-                <div className="w-full lg:w-1/2 min-w-0 relative" style={{ height: 200 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={chartData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={55}
-                                outerRadius={80}
-                                paddingAngle={4}
-                                dataKey="value"
-                                stroke="none"
-                            >
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                                itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                                formatter={(value) => [formatBytes(value), 'Usage']}
-                            />
-                        </PieChart>
-                    </ResponsiveContainer>
+                <div className="w-full lg:w-1/2 min-w-0 relative" style={{ height: 200, minHeight: 200 }}>
+                    {chartData.length > 0 && (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={55}
+                                    outerRadius={80}
+                                    paddingAngle={4}
+                                    dataKey="value"
+                                    stroke="none"
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                                    itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                    formatter={(value) => [formatBytes(value), 'Usage']}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    )}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
                         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Total</div>
                         <div className="text-base font-black text-slate-800 dark:text-white tracking-tight">24h</div>
@@ -126,7 +128,7 @@ const ApplicationSummaryCard = ({ dashboardData, loading }) => {
 
             <div className="mt-auto pt-6 border-t border-slate-100 dark:border-white/5">
                 <button
-                    onClick={() => navigate('/applications')}
+                    onClick={() => navigate(`/site/${dashboardData?.siteId || Object.values(dashboardData || {})[0]?.siteId || 'current'}/applications`)}
                     className="flex items-center justify-between w-full h-12 px-6 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-2xl border border-slate-200 dark:border-white/5 hover:border-indigo-300 dark:hover:border-indigo-500/30 transition-all group/btn"
                 >
                     <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 group-hover/btn:text-indigo-600 dark:group-hover/btn:text-white uppercase tracking-widest">Explore Full Traffic</span>

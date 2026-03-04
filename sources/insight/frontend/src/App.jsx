@@ -5,6 +5,12 @@ import SiteLayout from './layouts/SiteLayout';
 import Login from './pages/Login';
 import GlobalDashboard from './pages/Dashboard/GlobalDashboard';
 import SiteDetail from './pages/Dashboard/SiteDetail';
+import SiteHealth from './pages/Dashboard/Health';
+import SiteAlerts from './pages/Dashboard/Alerts';
+import SiteClients from './pages/Dashboard/Clients';
+import SiteNetworks from './pages/Dashboard/Networks';
+import SiteDevices from './pages/Dashboard/Devices';
+import SiteApplications from './pages/Dashboard/Applications';
 import Configuration from './pages/Configuration';
 import AdminLogs from './pages/Admin/Logs';
 import { SiteProvider } from './context/SiteContext';
@@ -153,6 +159,12 @@ function App() {
             {/* Site-specific routes — use SiteLayout */}
             <Route path="/site/:siteId" element={<SiteLayout onLogout={handleLogout} userRole={userRole} />}>
               <Route index element={<SiteDetail />} />
+              <Route path="health" element={<SiteHealth />} />
+              <Route path="alerts" element={<SiteAlerts />} />
+              <Route path="clients" element={<SiteClients />} />
+              <Route path="networks" element={<SiteNetworks />} />
+              <Route path="devices" element={<SiteDevices />} />
+              <Route path="applications" element={<SiteApplications />} />
               <Route path="cloner" element={<Configuration />} />
             </Route>
           </Routes>

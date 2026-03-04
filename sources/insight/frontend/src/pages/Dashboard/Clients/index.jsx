@@ -37,11 +37,11 @@ const Clients = () => {
         try {
             let res;
             const endpoints = [
-                `/proxy/api/sites/${siteId}/clientSummary`,
-                `/proxy/api/sites/${siteId}/clientsSummary`,
-                `/proxy/api/sites/${siteId}/clients`,
-                `/proxy/api/v1/sites/${siteId}/clients`,
-                `/proxy/api/v1/sites/${siteId}/dashboard`
+                `/replay/api/sites/${siteId}/clientSummary`,
+                `/replay/api/sites/${siteId}/clientsSummary`,
+                `/replay/api/sites/${siteId}/clients`,
+                `/replay/api/sites/${siteId}/clients`,
+                `/replay/api/sites/${siteId}/dashboard`
             ];
 
             for (const url of endpoints) {

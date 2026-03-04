@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useSite } from '../../context/SiteContext';
 import { MapPin, Wifi, ChevronRight } from 'lucide-react';
 
+const STATUS_BADGE = {
+    up:   { label: 'Online',  cls: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' },
+    down: { label: 'Offline', cls: 'bg-slate-500/10 text-slate-400 border border-slate-500/20' },
+};
+
 const GlobalDashboard = () => {
     const { sites, loadingSites, fetchSites } = useSite();
     const navigate = useNavigate();
@@ -39,9 +44,16 @@ const GlobalDashboard = () => {
                                 <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
                             </div>
                             <h3 className="text-sm font-bold text-white mb-1 truncate">{name}</h3>
-                            <div className="flex items-center gap-2">
-                                <Wifi size={12} className="text-slate-500" />
-                                <span className="text-xs text-slate-500 uppercase tracking-wider">{role || 'Site'}</span>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <Wifi size={12} className="text-slate-500" />
+                                    <span className="text-xs text-slate-500 uppercase tracking-wider">{role || 'Site'}</span>
+                                </div>
+                                {site.status && STATUS_BADGE[site.status] && (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${STATUS_BADGE[site.status].cls}`}>
+                                        {STATUS_BADGE[site.status].label}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     );

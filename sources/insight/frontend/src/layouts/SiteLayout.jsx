@@ -1,8 +1,18 @@
+import { useEffect } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import SiteSidebar from '../components/Sidebar/SiteSidebar';
+import { useSite } from '../context/SiteContext';
 
 const SiteLayout = ({ onLogout, userRole }) => {
     const { siteId } = useParams();
+    const { setSelectedSiteId } = useSite();
+
+    useEffect(() => {
+        if (siteId) {
+            setSelectedSiteId(siteId);
+        }
+    }, [siteId, setSelectedSiteId]);
+
     return (
         <div className="flex h-screen w-full overflow-hidden bg-[#020617] text-white">
             <SiteSidebar siteId={siteId} onLogout={onLogout} userRole={userRole} />

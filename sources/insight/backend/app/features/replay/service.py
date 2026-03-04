@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request
 from app.shared.constants import (
     ARUBA_BASE_URL,
+    ARUBA_API_VERSION,
     ARUBA_SSO_VALIDATE_URL,
     ARUBA_SSO_AUTHORIZE_URL,
     ARUBA_SSO_TOKEN_URL,
@@ -320,7 +321,8 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
     access_token = auth_header.split(" ")[1]
 
     # Extract domain from query params or use default
-    domain = original_request.query_params.get("domain", "sso.arubainstanton.com")
+    _default_domain = ARUBA_BASE_URL.replace("https://", "")
+    domain = original_request.query_params.get("domain", _default_domain)
     BASE_URL = f"https://{domain}"
 
     if not path.startswith("/"): path = "/" + path
@@ -341,15 +343,12 @@ async def proxy_api_call(path: str, method: str, original_request: Request):
     filtered_headers["Host"] = domain
     filtered_headers["Origin"] = f"https://{domain}"
     filtered_headers["Referer"] = f"https://{domain}/"
-    filtered_headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    filtered_headers["User-Agent"] = CHROME_USER_AGENT
 
-    # Add mandatory Aruba headers if missing (Matching Capture Exactly)
-    if "X-ION-API-VERSION" not in filtered_headers and "X-Ion-Api-Version" not in filtered_headers:
-        filtered_headers["X-ION-API-VERSION"] = "22"
-    if "X-ION-CLIENT-PLATFORM" not in filtered_headers and "X-Ion-Client-Platform" not in filtered_headers:
-        filtered_headers["X-ION-CLIENT-PLATFORM"] = "web"
-    if "X-ION-CLIENT-TYPE" not in filtered_headers and "X-Ion-Client-Type" not in filtered_headers:
-        filtered_headers["X-ION-CLIENT-TYPE"] = "InstantOn"
+    # Always force correct Aruba headers — never trust what the client sends
+    filtered_headers["X-ION-API-VERSION"] = ARUBA_API_VERSION
+    filtered_headers["X-ION-CLIENT-PLATFORM"] = "web"
+    filtered_headers["X-ION-CLIENT-TYPE"] = "InstantOn"
 
     # Handle body & params
     body = await original_request.body()

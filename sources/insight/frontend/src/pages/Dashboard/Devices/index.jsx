@@ -30,9 +30,9 @@ const getHealthConfig = (device) => {
     const isUp = (device.status || device.state || '').toLowerCase() === 'up';
     const health = (device.health || (isUp ? 'good' : 'poor')).toLowerCase();
     const map = {
-        good:    { dot: 'bg-emerald-400 shadow-emerald-400/60', text: 'text-emerald-400', label: 'Good' },
-        fair:    { dot: 'bg-amber-400 shadow-amber-400/60',    text: 'text-amber-400',   label: 'Fair' },
-        poor:    { dot: 'bg-rose-500 shadow-rose-500/60',      text: 'text-rose-400',    label: 'Poor' },
+        good: { dot: 'bg-emerald-400 shadow-emerald-400/60', text: 'text-emerald-400', label: 'Good' },
+        fair: { dot: 'bg-amber-400 shadow-amber-400/60', text: 'text-amber-400', label: 'Fair' },
+        poor: { dot: 'bg-rose-500 shadow-rose-500/60', text: 'text-rose-400', label: 'Poor' },
     };
     return { ...(map[health] || { dot: 'bg-slate-500', text: 'text-slate-500', label: health }), isUp };
 };
@@ -97,7 +97,7 @@ const Devices = () => {
         setLoading(true);
         setError('');
         try {
-            const res = await apiClient.get(`/proxy/api/sites/${siteId}/inventory`);
+            const res = await apiClient.get(`/replay/api/sites/${siteId}/inventory`);
             setDevices(extractDevices(res.data) || []);
         } catch (err) {
             console.error('Inventory fetch error:', err);
@@ -109,7 +109,7 @@ const Devices = () => {
 
     const fetchInventorySilent = async (siteId) => {
         try {
-            const res = await apiClient.get(`/proxy/api/sites/${siteId}/inventory`);
+            const res = await apiClient.get(`/replay/api/sites/${siteId}/inventory`);
             const extracted = extractDevices(res.data);
             if (extracted.length > 0) setDevices(extracted);
         } catch { /* silent */ }

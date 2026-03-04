@@ -9,6 +9,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import SyncIndicator from '../../components/SyncIndicator';
 import ApplicationSummaryCard from './Applications/ApplicationSummaryCard';
 
+const HEALTH_BADGE = {
+    good: { label: 'Good', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    warning: { label: 'Warning', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+    poor: { label: 'Poor', cls: 'bg-rose-500/10 text-rose-400 border-rose-500/20' },
+    up: { label: 'Online', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+    down: { label: 'Offline', cls: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
+};
+
 const SiteDetail = () => {
     const { siteId } = useParams();
     const navigate = useNavigate();
@@ -17,36 +25,37 @@ const SiteDetail = () => {
     const { sites, setSelectedSiteId, fetchSites } = useSite();
 
     const [data, setData] = useState(null);
+    const [siteInfo, setSiteInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [lastUpdated, setLastUpdated] = useState(null);
 
-    // Sync selectedSiteId so sidebar pages know which site is active
-    useEffect(() => {
-        if (siteId) {
-            setSelectedSiteId(siteId);
-        }
-    }, [siteId]);
 
-    // Make sure sites are loaded (needed for site name display)
+
+    // Make sure sites are loaded (needed for site name fallback)
     useEffect(() => {
         if (sites.length === 0) fetchSites();
     }, []);
 
     const site = sites.find(s => (s.siteId || s.id || s._id) === siteId);
-    const siteName = site?.siteName || site?.name || siteId;
+    const siteName = siteInfo?.name || site?.siteName || site?.name || siteId;
 
-    const fetchDashboardData = async (silent = false) => {
+    // Parallel fetch: site info (header) + dashboard metrics (cards)
+    const fetchAll = async (silent = false) => {
         if (!silent) setLoading(true);
         else setIsRefreshing(true);
         setError('');
         try {
-            const res = await apiClient.get(`/proxy/api/sites/${siteId}/dashboard`);
-            setData(res.data);
+            const [infoRes, dashRes] = await Promise.all([
+                apiClient.get(`/overview/sites/${siteId}`),
+                apiClient.get(`/replay/api/sites/${siteId}/dashboard`),
+            ]);
+            setSiteInfo(infoRes.data);
+            setData(dashRes.data);
             setLastUpdated(new Date());
         } catch (err) {
-            console.error('Dashboard fetch error:', err);
+            console.error('Fetch error:', err);
             if (!silent) setError(t('dashboard.error_fetch'));
         } finally {
             if (!silent) setLoading(false);
@@ -55,13 +64,14 @@ const SiteDetail = () => {
     };
 
     useEffect(() => {
-        if (siteId) fetchDashboardData();
+        if (siteId) fetchAll();
     }, [siteId]);
 
     useIntervalFetch(() => {
-        if (siteId && !loading) fetchDashboardData(true);
+        if (siteId && !loading) fetchAll(true);
     }, isAutoRefreshEnabled ? 60000 : null, [siteId, loading, isAutoRefreshEnabled]);
 
+    // Map from Aruba /api/v1/sites/{id}/dashboard confirmed response structure
     const healthScore = data?.healthOverview?.currentScore?.score ?? 'N/A';
     const activeAlerts =
         (data?.alertsOverview?.activeMajorAlertsCount || 0) +
@@ -79,43 +89,75 @@ const SiteDetail = () => {
         (data?.devicesOverview?.wifiRouters?.online || 0) +
         (data?.devicesOverview?.gateways?.online || 0);
 
+    // Sub-metric derivations
+    const majorAlerts  = data?.alertsOverview?.activeMajorAlertsCount || 0;
+    const minorAlerts  = data?.alertsOverview?.activeMinorAlertsCount || 0;
+    const infoAlerts   = data?.alertsOverview?.activeInfoAlertsCount  || 0;
+
+    const goodClients  = data?.clientsOverview?.totalClient?.goodCount || 0;
+    const fairClients  = data?.clientsOverview?.totalClient?.fairCount || 0;
+    const poorClients  = data?.clientsOverview?.totalClient?.poorCount || 0;
+
+    const inactiveWireless   = data?.networksOverview?.inactiveWirelessNetworks || 0;
+    const inactiveWired      = data?.networksOverview?.inactiveWiredNetworks    || 0;
+    const inactiveNetworks   = inactiveWireless + inactiveWired;
+    const activeNetworkCount = activeNetworks - inactiveNetworks;
+
+    const apTotal      = data?.devicesOverview?.accessPoints?.total || 0;
+    const swTotal      = data?.devicesOverview?.switches?.total     || 0;
+    const stTotal      = data?.devicesOverview?.stacks?.total       || 0;
+    const wrTotal      = data?.devicesOverview?.wifiRouters?.total  || 0;
+    const gwTotal      = data?.devicesOverview?.gateways?.total     || 0;
+    const totalDevices   = apTotal + swTotal + stTotal + wrTotal + gwTotal;
+    const offlineDevices = totalDevices - onlineDevices;
+
+    const healthConditions = data?.healthOverview?.currentScore?.conditionsCount || 0;
+
     const cards = [
         {
             key: 'health',
             label: t('dashboard.network_health'),
             icon: <Activity className="text-emerald-500" size={24} />,
             value: healthScore,
-            route: '/health',
+            sub: data ? `Conditions: ${healthConditions}` : '',
+            route: `/site/${siteId}/health`,
         },
         {
             key: 'alerts',
             label: t('dashboard.active_alerts'),
             icon: <Bell className="text-rose-500" size={24} />,
             value: activeAlerts,
-            route: '/alerts',
+            sub: data ? `Major: ${majorAlerts} / Minor: ${minorAlerts} / Info: ${infoAlerts}` : '',
+            route: `/site/${siteId}/alerts`,
         },
         {
             key: 'clients',
             label: t('dashboard.connected_clients'),
             icon: <Users className="text-blue-500" size={24} />,
             value: connectedClients,
-            route: '/clients',
+            sub: data ? `Good: ${goodClients} / Fair: ${fairClients} / Poor: ${poorClients}` : '',
+            route: `/site/${siteId}/clients`,
         },
         {
             key: 'networks',
             label: t('dashboard.total_networks'),
             icon: <Wifi className="text-indigo-500" size={24} />,
             value: activeNetworks,
-            route: '/networks',
+            sub: data ? `Active: ${activeNetworkCount} / Inactive: ${inactiveNetworks}` : '',
+            route: `/site/${siteId}/networks`,
         },
         {
             key: 'devices',
             label: t('dashboard.online_devices'),
             icon: <Monitor className="text-purple-500" size={24} />,
             value: onlineDevices,
-            route: '/devices',
+            sub: data ? `Online: ${onlineDevices} / Offline: ${offlineDevices}` : '',
+            route: `/site/${siteId}/devices`,
         },
     ];
+
+    const healthKey = siteInfo?.health || siteInfo?.status;
+    const badge = HEALTH_BADGE[healthKey] || null;
 
     return (
         <div className="p-8 pb-32">
@@ -129,9 +171,16 @@ const SiteDetail = () => {
                         <ChevronLeft size={16} />
                         Back to Sites
                     </button>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-                        {siteName}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                            {siteName}
+                        </h1>
+                        {badge && (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${badge.cls}`}>
+                                {badge.label}
+                            </span>
+                        )}
+                    </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         {t('dashboard.subtitle')}
                     </p>
@@ -171,6 +220,11 @@ const SiteDetail = () => {
                                 {loading && !data ? '...' : card.value}
                             </span>
                         </div>
+                        {card.sub && (
+                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-medium tracking-wide">
+                                {card.sub}
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

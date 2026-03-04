@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Sliders, ArrowLeft } from 'lucide-react';
+import { Home, Sliders, ArrowLeft, Activity, Bell, Users, Wifi, Monitor, Box } from 'lucide-react';
 import UserWidget from './UserWidget';
 import { useSite } from '../../context/SiteContext';
 
@@ -16,10 +16,9 @@ const SiteSidebar = ({ siteId, onLogout, userRole = 'guest' }) => {
         : siteId;
 
     const getNavLinkClass = ({ isActive }) =>
-        `flex items-center px-4 py-3 text-sm font-medium transition-colors ${
-            isActive
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+        `flex items-center px-4 py-3 text-sm font-medium transition-colors ${isActive
+            ? 'bg-blue-600 text-white'
+            : 'text-gray-300 hover:bg-slate-800 hover:text-white'
         }`;
 
     return (
@@ -54,18 +53,35 @@ const SiteSidebar = ({ siteId, onLogout, userRole = 'guest' }) => {
 
             {/* Site-scoped navigation */}
             <nav className="flex-1 overflow-y-auto pt-4 space-y-1">
-                <NavLink
-                    to={`/site/${siteId}`}
-                    end
-                    className={getNavLinkClass}
-                >
+                <NavLink to={`/site/${siteId}`} end className={getNavLinkClass}>
                     <Home className="w-5 h-5 mr-3" />
                     Overview
                 </NavLink>
-                <NavLink
-                    to={`/site/${siteId}/cloner`}
-                    className={getNavLinkClass}
-                >
+                <NavLink to={`/site/${siteId}/health`} className={getNavLinkClass}>
+                    <Activity className="w-5 h-5 mr-3" />
+                    Health
+                </NavLink>
+                <NavLink to={`/site/${siteId}/alerts`} className={getNavLinkClass}>
+                    <Bell className="w-5 h-5 mr-3" />
+                    Alerts
+                </NavLink>
+                <NavLink to={`/site/${siteId}/clients`} className={getNavLinkClass}>
+                    <Users className="w-5 h-5 mr-3" />
+                    Clients
+                </NavLink>
+                <NavLink to={`/site/${siteId}/networks`} className={getNavLinkClass}>
+                    <Wifi className="w-5 h-5 mr-3" />
+                    Networks
+                </NavLink>
+                <NavLink to={`/site/${siteId}/devices`} className={getNavLinkClass}>
+                    <Monitor className="w-5 h-5 mr-3" />
+                    Devices
+                </NavLink>
+                <NavLink to={`/site/${siteId}/applications`} className={getNavLinkClass}>
+                    <Box className="w-5 h-5 mr-3" />
+                    Applications
+                </NavLink>
+                <NavLink to={`/site/${siteId}/cloner`} className={getNavLinkClass}>
                     <Sliders className="w-5 h-5 mr-3" />
                     Configuration
                 </NavLink>
