@@ -62,7 +62,11 @@ export const en = {
         severity_poor: "Poor",
         severity_fair: "Fair",
         severity_good: "Good",
-        severity_none: "None"
+        severity_none: "None",
+        histogram_title: "Alert Density",
+        filter_active: "Filtered",
+        clear_filter: "Clear filter",
+        conditions_count: "conditions"
     },
     cloner: {
         title: "Configuration Source",

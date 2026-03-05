@@ -31,6 +31,5 @@ __pycache__/
 #tempo files
 tempo-py/
 #ignore docs and tasks
-/docs/plan
-/docs/tasks
+.docs/
 
