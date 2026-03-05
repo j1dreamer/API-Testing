@@ -1,12 +1,24 @@
 version: '3.8'
 
 services:
+  # THÊM ĐOẠN NÀY VÀO TRƯỚC BACKEND
+  mongodb:
+    image: mongo:latest
+    container_name: insight_mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - insight-net
+
   backend:
     build:
       context: ./sources/insight/backend
       dockerfile: Dockerfile
     container_name: insight_backend
     restart: unless-stopped
+    depends_on:
+      - mongodb # Đợi database chạy xong mới chạy backend
     env_file:
       - ./sources/insight/.env
     ports:
@@ -32,3 +44,7 @@ services:
 networks:
   insight-net:
     driver: bridge
+
+# THÊM ĐOẠN NÀY ĐỂ LƯU DỮ LIỆU DB KHÔNG BỊ MẤT KHI RESTART
+volumes:
+  mongo-data:
