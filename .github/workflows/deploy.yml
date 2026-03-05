@@ -10,6 +10,7 @@ jobs:
     steps:
       - name: Deploy Code
         run: |
-          cd ~/API-Testing
+          cd /home/cuong-deploy/API-Testing
           git pull origin main
           docker compose up -d --build
+          docker image prune -f
