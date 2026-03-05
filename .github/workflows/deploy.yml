@@ -1,0 +1,21 @@
+name: Auto Deploy INSIGHT
+
+on:
+  release:
+    types: [published] # Kích hoạt khi anh tạo một Release mới
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Ubuntu Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd ~/BOT_Tracking
+            git pull origin main
+            docker compose up -d --build
+            docker image prune -f
