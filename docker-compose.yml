@@ -21,6 +21,8 @@ services:
       - mongodb # Đợi database chạy xong mới chạy backend
     env_file:
       - ./sources/insight/.env
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
     ports:
       - "3003:8001"
     extra_hosts:
