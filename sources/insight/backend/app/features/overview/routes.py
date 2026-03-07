@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Dict, Any
+from app.shared.auth_deps import get_current_insight_user, require_master_token
 from app.features.overview.service import overview_service
 from app.shared.aruba import aruba_service
 
@@ -6,33 +8,45 @@ router = APIRouter(prefix="/api/v1/overview", tags=["Overview"])
 
 
 @router.get("/sites")
-async def get_live_sites(request: Request):
-    """
-    Return all sites for the authenticated Aruba token with live role mapping.
-    Stateless: data is fetched directly from Aruba API — no DB cache.
-    """
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Header Authorization không hợp lệ.")
-    token = auth_header.split(" ", 1)[1]
-
-    caller_email = request.headers.get("X-Insight-User", "").strip()
-    sites = await overview_service.get_live_sites(token, caller_email)
+async def get_live_sites(
+    user: Dict[str, Any] = Depends(get_current_insight_user),
+    master_token: str = Depends(require_master_token),
+):
+    sites = await overview_service.get_live_sites(master_token, user["email"])
     return {"status": "success", "sites": sites}
 
 
 @router.get("/sites/{site_id}")
-async def get_site_detail(site_id: str, request: Request):
-    """Fetch single site detail from Aruba API."""
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Header Authorization không hợp lệ.")
-    token = auth_header.split(" ", 1)[1]
-
+async def get_site_detail(
+    site_id: str,
+    user: Dict[str, Any] = Depends(get_current_insight_user),
+    master_token: str = Depends(require_master_token),
+):
     response = await aruba_service.call_api(
         method="GET",
         endpoint=f"/api/sites/{site_id}",
-        aruba_token=token,
+        aruba_token=master_token,
+    )
+    if response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail="Aruba API error.")
+
+    return response.json()
+
+
+@router.get("/sites/{site_id}/{sub_path:path}")
+async def proxy_site_endpoint(
+    site_id: str,
+    sub_path: str,
+    user: Dict[str, Any] = Depends(get_current_insight_user),
+    master_token: str = Depends(require_master_token),
+):
+    """Generic proxy for any Aruba site sub-endpoint using master token."""
+    response = await aruba_service.call_api(
+        method="GET",
+        endpoint=f"/api/sites/{site_id}/{sub_path}",
+        aruba_token=master_token,
     )
     if response.status_code == 401:
         raise HTTPException(status_code=401, detail="Phiên làm việc Aruba đã hết hạn.")

@@ -37,7 +37,7 @@ const Networks = () => {
         else setIsRefreshing(true);
         setError('');
         try {
-            const res = await apiClient.get(`/replay/api/sites/${siteId}/wiredNetworks`);
+            const res = await apiClient.get(`/overview/sites/${siteId}/wiredNetworks`);
             setNetworksData(processNetworks(res.data));
             setLastUpdated(new Date());
         } catch (err) {

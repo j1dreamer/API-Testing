@@ -1,5 +1,6 @@
 import httpx
 import json
+import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from app.database.connection import get_database
@@ -36,10 +37,12 @@ async def get_live_account_sites(aruba_token: str) -> List[Dict[str, Any]]:
             # Standardize fields: 'id' -> 'siteId', 'name' -> 'siteName'
             standard_sites = []
             for s in raw_elements:
+                role_raw = (s.get("role") or s.get("userRoleOnSite") or "").strip().lower()
                 standard_sites.append({
-                    "siteId": s.get("id") or s.get("siteId"),
-                    "siteName": s.get("name") or s.get("siteName", "Unknown Site"),
-                    "role": s.get("userRoleOnSite")
+                    "id": s.get("id") or s.get("siteId") or s.get("site_id"),
+                    "siteId": s.get("id") or s.get("siteId") or s.get("site_id"),
+                    "siteName": s.get("name") or s.get("siteName") or s.get("site_name", "Unknown Site"),
+                    "role": "admin" if role_raw.startswith("admin") else ("op" if role_raw.startswith("op") else ("view" if role_raw.startswith("view") else "view"))
                 })
             return standard_sites
     except Exception as e:
@@ -523,10 +526,13 @@ async def sync_ssids_passwords(source_network_name: str, new_password: str, targ
             return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update request error: {str(e)}"}
 
     async with httpx.AsyncClient(verify=False) as client:
-        tasks = [update_site_ssid(client, sid) for sid in target_site_ids]
-        exec_results = await asyncio.gather(*tasks)
+        exec_results = []
+        for sid in target_site_ids:
+            res = await update_site_ssid(client, sid)
+            exec_results.append(res)
+            await asyncio.sleep(2.0)
 
-    return list(exec_results)
+    return exec_results
 
 async def sync_ssids_config(source_site_id: str, source_network_name: str, target_site_ids: List[str], aruba_token: str) -> List[Dict[str, Any]]:
     """Deep clone an SSID config using the provided token."""
@@ -623,10 +629,13 @@ async def sync_ssids_config(source_site_id: str, source_network_name: str, targe
             return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Update request error: {str(e)}"}
 
     async with httpx.AsyncClient(verify=False) as client:
-        tasks = [update_site_ssid_config(client, sid) for sid in target_site_ids]
-        exec_results = await asyncio.gather(*tasks)
+        exec_results = []
+        for sid in target_site_ids:
+            res = await update_site_ssid_config(client, sid)
+            exec_results.append(res)
+            await asyncio.sleep(2.0)
 
-    return list(exec_results)
+    return exec_results
 
 async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str], aruba_token: str) -> List[Dict[str, Any]]:
     """Find and delete SSIDs using the provided token."""
@@ -695,10 +704,13 @@ async def sync_ssids_delete(source_network_name: str, target_site_ids: List[str]
             return {"target": site_id, "name": source_network_name, "status": "ERROR", "detail": f"Delete request error: {str(e)}"}
 
     async with httpx.AsyncClient(verify=False) as client:
-        tasks = [delete_site_ssid(client, sid) for sid in target_site_ids]
-        exec_results = await asyncio.gather(*tasks)
+        exec_results = []
+        for sid in target_site_ids:
+            res = await delete_site_ssid(client, sid)
+            exec_results.append(res)
+            await asyncio.sleep(2.0)
 
-    return list(exec_results)
+    return exec_results
 
 async def sync_ssids_create(
     network_name: str,
@@ -894,7 +906,179 @@ async def sync_ssids_create(
             return {"target": site_id, "name": network_name, "status": "ERROR", "detail": f"Request error: {str(e)}"}
 
     async with httpx.AsyncClient(verify=False) as client:
-        tasks = [create_site_ssid(client, sid) for sid in target_site_ids]
-        exec_results = await asyncio.gather(*tasks)
+        exec_results = []
+        for sid in target_site_ids:
+            res = await create_site_ssid(client, sid)
+            exec_results.append(res)
+            await asyncio.sleep(2.0)
 
-    return list(exec_results)
+    return exec_results
+
+async def batch_account_precheck(email: str, target_site_ids: List[str], master_token: str) -> List[Dict]:
+    api_headers = {"Authorization": f"Bearer {master_token}"}
+    existing_sites = []
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        # We will do this sequentially with a small delay to avoid rate limiting
+        for site_id in target_site_ids:
+            url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/administration"
+            try:
+                res = await client.get(url, headers=api_headers, timeout=10.0)
+                if res.status_code == 200:
+                    data = res.json()
+                    admins = data.get("administrators", [])
+                    # check if email exists in admins array
+                    if any(admin.get("email", "").lower() == email.lower() for admin in admins):
+                        existing_sites.append({"site_id": site_id})
+            except Exception as e:
+                pass # Ignore errors during pre-check, they will be caught during execution
+                
+            await asyncio.sleep(0.2)
+            
+    return existing_sites
+
+async def batch_account_access(action_type: str, email: str, role: str, target_site_ids: List[str], master_token: str, actor_email: str = "anonymous") -> List[Dict]:
+    import asyncio
+    from app.database.auth_crud import insert_audit_log
+    from datetime import datetime, timezone
+    api_headers = {"Authorization": f"Bearer {master_token}"}
+    results = []
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        for site_id in target_site_ids:
+            url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}/administration?action=addAccount" if action_type == "add" else f"https://portal.instant-on.hpe.com/api/sites/{site_id}/administration?action=removeAccount"
+            payload = {"email": email}
+            if action_type == "add":
+                payload["roleOnSite"] = role
+                
+            status_text = "ERROR"
+            try:
+                res = await client.post(url, headers=api_headers, json=payload, timeout=20.0)
+                if res.status_code in [200, 204]:
+                    status_text = "SUCCESS"
+                    results.append({"target": site_id, "status": "SUCCESS", "detail": f"Account {action_type}ed successfully."})
+                else:
+                    data = res.json() if res.content else res.text
+                    results.append({"target": site_id, "status": "ERROR", "detail": data})
+            except Exception as e:
+                results.append({"target": site_id, "status": "ERROR", "detail": str(e)})
+                
+            # Insert Audit Log for each site
+            await insert_audit_log({
+                "timestamp": datetime.now(timezone.utc),
+                "insight_user_id": actor_email,
+                "admin_master_id": "Master System",
+                "action": f"Batch Account Access ({action_type.capitalize()})",
+                "site_id": site_id,
+                "status": status_text,
+                "detail": f"Target Email: {email}"
+            })
+
+            await asyncio.sleep(2.0)
+        
+    return results
+
+async def batch_site_delete(target_site_ids: List[str], master_token: str, actor_email: str = "anonymous") -> List[Dict]:
+    import asyncio
+    from app.database.auth_crud import insert_audit_log
+    from datetime import datetime, timezone
+    api_headers = {"Authorization": f"Bearer {master_token}"}
+    results = []
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        for site_id in target_site_ids:
+            # We need to hit DELETE /sites/{site_id}
+            url = f"https://portal.instant-on.hpe.com/api/sites/{site_id}"
+            status_text = "ERROR"
+            try:
+                res = await client.delete(url, headers=api_headers, timeout=20.0)
+                if res.status_code in [200, 204]:
+                    status_text = "SUCCESS"
+                    results.append({"target": site_id, "status": "SUCCESS", "detail": "Site deleted successfully."})
+                else:
+                    data = res.json() if res.content else res.text
+                    results.append({"target": site_id, "status": "ERROR", "detail": data})
+            except Exception as e:
+                results.append({"target": site_id, "status": "ERROR", "detail": str(e)})
+                
+            # Insert Audit Log for each site
+            await insert_audit_log({
+                "timestamp": datetime.now(timezone.utc),
+                "insight_user_id": actor_email,
+                "admin_master_id": "Master System",
+                "action": "Batch Site Delete",
+                "site_id": site_id,
+                "status": status_text
+            })
+
+            await asyncio.sleep(2.0)
+        
+    return results
+
+async def batch_site_provision(
+    source_site_id: str,
+    clone_count: int,
+    prefix: str,
+    regulatory_domain: str,
+    timezone_iana: str,
+    configured_location: dict,
+    target_zone_ids: List[str],
+    master_token: str,
+    actor_email: str = "anonymous"
+) -> List[Dict]:
+    import asyncio
+    from app.database.auth_crud import insert_audit_log
+    from datetime import datetime, timezone
+    api_headers = {"Authorization": f"Bearer {master_token}", "X-ION-API-VERSION": "23"}
+    results = []
+    
+    # We need to hit POST /sites/{source_site_id}/siteCloning
+    url = f"https://portal.instant-on.hpe.com/api/sites/{source_site_id}/siteCloning"
+    
+    from app.database.zones_crud import add_sites_to_zone
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        for i in range(clone_count):
+            padded_index = str(i + 1).zfill(2)
+            site_name = f"{prefix.strip()} - {padded_index}"
+            
+            payload = {
+                "siteName": site_name,
+                "regulatoryDomain": regulatory_domain,
+                "timezoneIana": timezone_iana,
+                "configuredLocation": configured_location
+            }
+            
+            status_text = "ERROR"
+            try:
+                res = await client.post(url, headers=api_headers, json=payload, timeout=30.0)
+                if res.status_code in [200, 201]:
+                    status_text = "SUCCESS"
+                    data = res.json()
+                    new_site_id = data.get("siteId") or data.get("id")
+                    results.append({"target": site_name, "status": "SUCCESS", "detail": "Site provisioned successfully.", "new_site_id": new_site_id})
+                    
+                    # Add to target zones
+                    if new_site_id and target_zone_ids:
+                        for zone_id in target_zone_ids:
+                            await add_sites_to_zone(zone_id, [new_site_id])
+                else:
+                    data = res.json() if res.content else res.text
+                    results.append({"target": site_name, "status": "ERROR", "detail": data})
+            except Exception as e:
+                results.append({"target": site_name, "status": "ERROR", "detail": str(e)})
+                
+            # Insert Audit Log for each site
+            await insert_audit_log({
+                "timestamp": datetime.now(timezone.utc),
+                "insight_user_id": actor_email,
+                "admin_master_id": "Master System",
+                "action": "Batch Site Provision",
+                "site_id": new_site_id if status_text == "SUCCESS" else None,
+                "status": status_text,
+                "detail": f"Provisioned: {site_name}"
+            })
+
+            await asyncio.sleep(2.0)
+            
+    return results

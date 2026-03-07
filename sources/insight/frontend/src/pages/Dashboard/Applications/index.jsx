@@ -34,7 +34,7 @@ const Applications = () => {
 
         setError('');
         try {
-            const res = await apiClient.get(`/replay/api/sites/${siteId}/dashboard`);
+            const res = await apiClient.get(`/overview/sites/${siteId}/dashboard`);
             setDashboardData(res.data);
             setLastUpdated(new Date());
         } catch (err) {

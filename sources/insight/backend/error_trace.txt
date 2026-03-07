@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "<string>", line 5, in <module>
+  File "D:\AITC\API-Testing\sources\insight\backend\app\main.py", line 20, in <module>
+    from app.features.zones.routes import router as zones_router
+  File "D:\AITC\API-Testing\sources\insight\backend\app\features\zones\routes.py", line 4, in <module>
+    from app.shared.auth_deps import require_internal_admin, require_zone_access, require_zone_admin, _get_approved_user
+ImportError: cannot import name '_get_approved_user' from 'app.shared.auth_deps' (D:\AITC\API-Testing\sources\insight\backend\app\shared\auth_deps.py)

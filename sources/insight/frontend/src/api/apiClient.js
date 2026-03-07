@@ -14,11 +14,8 @@ apiClient.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers['X-ION-API-VERSION'] = '22';
-    config.headers['X-ION-CLIENT-TYPE'] = 'InstantOn';
-    config.headers['X-ION-CLIENT-PLATFORM'] = 'web';
 
-    // Add user email for backend stateless logging
+    // Keep X-Insight-User for middleware email enrichment (belt-and-suspenders)
     const email = sessionStorage.getItem('insight_user_email');
     if (email) {
         config.headers['X-Insight-User'] = email;
@@ -82,19 +79,18 @@ apiClient.interceptors.response.use(
             console.warn('SecurityService: Acquiring refresh lock...');
 
             try {
-                const refreshToken = sessionStorage.getItem('refresh_token');
-                if (!refreshToken) throw new Error("Không tìm thấy refresh_token trong sessionStorage");
+                const currentToken = sessionStorage.getItem('token');
+                if (!currentToken) throw new Error("Không tìm thấy token trong sessionStorage");
 
                 // Dùng axios gốc (không qua apiClient) để tránh trigger interceptor lần nữa
-                const res = await axios.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
-                const newToken = res.data?.token_value;
-                const newRefresh = res.data?.refresh_token;
+                const res = await axios.post('/api/v1/auth/refresh', {}, {
+                    headers: { Authorization: `Bearer ${currentToken}` }
+                });
+                const newToken = res.data?.access_token;
 
                 if (!newToken) throw new Error("refresh endpoint không trả về token");
 
                 sessionStorage.setItem('token', newToken);
-                if (newRefresh) sessionStorage.setItem('refresh_token', newRefresh);
-
                 originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
                 console.warn('SecurityService: Token refreshed thành công');
 

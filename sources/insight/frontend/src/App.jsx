@@ -13,16 +13,39 @@ import SiteDevices from './pages/Dashboard/Devices';
 import SiteApplications from './pages/Dashboard/Applications';
 import Configuration from './pages/Configuration';
 import AdminLogs from './pages/Admin/Logs';
+import ZoneManagement from './pages/Admin/ZoneManagement';
+import MasterAccount from './pages/Admin/MasterAccount';
+import UserManagement from './pages/Admin/UserManagement';
+import ZoneDashboard from './pages/Zones/ZoneDashboard';
+import ZoneSites from './pages/Zones/ZoneSites';
+import ZoneLogs from './pages/Zones/ZoneLogs';
+import TenantManagement from './pages/Super/TenantManagement';
+import SuperLogs from './pages/Super/SuperLogs';
+import SuperUserManagement from './pages/Super/SuperUserManagement';
 import { SiteProvider } from './context/SiteContext';
 import { SettingsProvider } from './context/SettingsContext';
 import './App.css';
 
-// Guard for admin-only routes.
+// Guard for admin-only routes (super_admin or tenant_admin).
 // - No session  → App.jsx never renders the Router at all (shows Login instead).
-// - Has session, not admin → redirect to /dashboard, session stays alive.
+// - Has session, not admin-tier → redirect to /dashboard, session stays alive.
 const AdminRoute = ({ userRole, children }) => {
-  if (userRole === 'admin') return children;
-  return <Navigate to="/dashboard" replace />;
+  if (userRole === 'super_admin' || userRole === 'tenant_admin') return children;
+  return <Navigate to="/zones" replace />;
+};
+
+// Guard for super_admin-only routes.
+const SuperRoute = ({ userRole, children }) => {
+  if (userRole === 'super_admin') return children;
+  return <Navigate to="/zones" replace />;
+};
+
+// Guard for viewer-blocked routes (e.g. Configuration).
+// viewer AND not a Zone Admin → redirect to /zones.
+// Manager and Zone Admins can access Configuration for their assigned sites/zones.
+const ViewerRoute = ({ userRole, isZoneAdmin, children }) => {
+  if (userRole === 'viewer' && !isZoneAdmin) return <Navigate to="/zones" replace />;
+  return children;
 };
 
 function App() {
@@ -33,7 +56,12 @@ function App() {
   // Initialized from sessionStorage so the very first render already has the correct
   // role — prevents the Admin tab from flashing hidden before verifySession completes.
   const [userRole, setUserRole] = useState(
-    () => sessionStorage.getItem('userRole') || 'guest'
+    () => sessionStorage.getItem('userRole') || 'viewer'
+  );
+  // isZoneAdmin: true nếu user có zone_role="admin" trong bất kỳ zone nào.
+  // Cho phép viewer là Zone Admin được vào Configuration (chỉ trong zone của họ).
+  const [isZoneAdmin, setIsZoneAdmin] = useState(
+    () => sessionStorage.getItem('isZoneAdmin') === 'true'
   );
 
   useEffect(() => {
@@ -48,13 +76,15 @@ function App() {
         // Must use apiClient so /api prefix is applied
         const { default: apiClient } = await import('./api/apiClient');
         const res = await apiClient.get('/auth/session');
-        if (res.data && res.data.token_value) {
-          // /auth/session is a stateless echo — it does NOT return a role field.
-          // The authoritative role was written to sessionStorage by the login flow.
-          // Read from sessionStorage; do NOT overwrite it.
-          const role = sessionStorage.getItem('userRole') || 'guest';
+        if (res.data && res.data.status === 'active') {
+          // JWT session verified — use role from server response (authoritative)
+          const role = res.data.role || sessionStorage.getItem('userRole') || 'viewer';
+          const zoneAdmin = res.data.is_zone_admin === true;
+          sessionStorage.setItem('userRole', role);
+          sessionStorage.setItem('isZoneAdmin', String(zoneAdmin));
           setIsLoggedIn(true);
           setUserRole(role);
+          setIsZoneAdmin(zoneAdmin);
         } else {
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('userRole');
@@ -104,11 +134,13 @@ function App() {
   }, [isLoggedIn]);
 
   const handleLoginSuccess = () => {
-    // Login component already wrote userRole to sessionStorage before calling this.
-    // Read it synchronously here so React state is set in the same tick as isLoggedIn.
-    const role = sessionStorage.getItem('userRole') || 'guest';
+    // Login component already wrote userRole + isZoneAdmin to sessionStorage before calling this.
+    // Read synchronously so React state is set in the same tick as isLoggedIn.
+    const role = sessionStorage.getItem('userRole') || 'viewer';
+    const zoneAdmin = sessionStorage.getItem('isZoneAdmin') === 'true';
     setTimeout(() => {
       setUserRole(role);
+      setIsZoneAdmin(zoneAdmin);
       setIsLoggedIn(true);
     }, 500);
   };
@@ -121,8 +153,7 @@ function App() {
       console.warn('Backend logout failed', e);
     }
     setIsLoggedIn(false);
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('selectedSiteId');
+    sessionStorage.clear();
     window.location.href = '/';
   };
 
@@ -144,16 +175,60 @@ function App() {
         <SiteProvider>
           <Routes>
             {/* Global routes — use GlobalLayout */}
-            <Route element={<GlobalLayout onLogout={handleLogout} userRole={userRole} />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route element={<GlobalLayout onLogout={handleLogout} userRole={userRole} isZoneAdmin={isZoneAdmin} />}>
+              <Route path="/" element={<Navigate to="/zones" replace />} />
               <Route path="/dashboard" element={<GlobalDashboard />} />
-              <Route path="/config" element={<Configuration />} />
+              <Route path="/config" element={
+                <ViewerRoute userRole={userRole} isZoneAdmin={isZoneAdmin}>
+                  <Configuration />
+                </ViewerRoute>
+              } />
+
+              {/* Zone routes — all logged-in users */}
+              <Route path="/zones" element={<ZoneDashboard />} />
+              <Route path="/zones/:zoneId/sites" element={<ZoneSites />} />
+              <Route path="/zones/:zoneId/logs" element={<ZoneLogs />} />
+
+              {/* Admin-only routes */}
               <Route path="/admin/logs" element={
                 <AdminRoute userRole={userRole}>
                   <AdminLogs />
                 </AdminRoute>
               } />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/admin/zones" element={
+                <AdminRoute userRole={userRole}>
+                  <ZoneManagement />
+                </AdminRoute>
+              } />
+              <Route path="/admin/master" element={
+                <AdminRoute userRole={userRole}>
+                  <MasterAccount />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users" element={
+                <AdminRoute userRole={userRole}>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+
+              {/* Super-admin-only routes */}
+              <Route path="/super/tenants" element={
+                <SuperRoute userRole={userRole}>
+                  <TenantManagement />
+                </SuperRoute>
+              } />
+              <Route path="/super/users" element={
+                <SuperRoute userRole={userRole}>
+                  <SuperUserManagement />
+                </SuperRoute>
+              } />
+              <Route path="/super/logs" element={
+                <SuperRoute userRole={userRole}>
+                  <SuperLogs />
+                </SuperRoute>
+              } />
+
+              <Route path="*" element={<Navigate to="/zones" replace />} />
             </Route>
 
             {/* Site-specific routes — use SiteLayout */}

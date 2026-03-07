@@ -97,7 +97,7 @@ const Devices = () => {
         setLoading(true);
         setError('');
         try {
-            const res = await apiClient.get(`/replay/api/sites/${siteId}/inventory`);
+            const res = await apiClient.get(`/overview/sites/${siteId}/inventory`);
             setDevices(extractDevices(res.data) || []);
         } catch (err) {
             console.error('Inventory fetch error:', err);
@@ -109,7 +109,7 @@ const Devices = () => {
 
     const fetchInventorySilent = async (siteId) => {
         try {
-            const res = await apiClient.get(`/replay/api/sites/${siteId}/inventory`);
+            const res = await apiClient.get(`/overview/sites/${siteId}/inventory`);
             const extracted = extractDevices(res.data);
             if (extracted.length > 0) setDevices(extracted);
         } catch { /* silent */ }

@@ -25,3 +25,6 @@ SUPER_ADMIN_EMAILS = [
     for email in os.getenv("SUPER_ADMIN_EMAILS", "").split(",")
     if email.strip()
 ]
+
+# Bootstrap password for super admins (used on first seed only)
+SUPER_ADMIN_PASSWORD = os.getenv("SUPER_ADMIN_PASSWORD", "")

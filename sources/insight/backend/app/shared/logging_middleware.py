@@ -1,90 +1,161 @@
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
+import re
 import json
 import asyncio
 from datetime import datetime, timezone
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from app.database.auth_crud import insert_audit_log
+from app.shared.jwt_utils import verify_insight_token
+
+
+# Regex to extract site_id from path like /api/v1/cloner/sites/{id}/...
+_SITE_ID_RE = re.compile(r"/sites/([^/]+)")
+# Regex to extract zone_id from path like /api/v1/zones/{id}/...
+_ZONE_ID_RE = re.compile(r"/zones/([^/]+)")
+
+# Exact-match endpoint → action label
+_EXACT_ACTIONS = {
+    "/api/v1/cloner/apply": "Clone Complete Config",
+    "/api/v1/cloner/sync-password": "Update PSK (Password)",
+    "/api/v1/cloner/sync-config": "Sync SSID Config",
+    "/api/v1/cloner/sync-delete": "Delete SSID",
+    "/api/v1/cloner/sync-create": "Create SSID",
+    "/api/v1/cloner/batch-site-delete": "Batch Site Delete",
+    "/api/v1/cloner/batch-account-access": "Batch Account Access",
+    "/api/v1/cloner/batch-site-provision": "Batch Site Provision",
+    "/api/v1/master/link": "Master Account Linked",
+    "/api/v1/master/unlink": "Master Account Unlinked",
+    "/api/v1/master/refresh-now": "Master Token Force Refreshed",
+    # Legacy paths (no /v1) kept for backward compat during transition
+    "/api/cloner/apply": "Clone Complete Config",
+    "/api/cloner/sync-password": "Update PSK (Password)",
+    "/api/cloner/sync-config": "Sync SSID Config",
+    "/api/cloner/sync-delete": "Delete SSID",
+    "/api/cloner/sync-create": "Create SSID",
+}
+
+
+def _resolve_zone_action(path: str, method: str):
+    if "/api/v1/zones" not in path:
+        return None
+    if method == "POST" and path.endswith("/api/v1/zones"):
+        return "Zone Created"
+    if method == "DELETE" and "/members/" in path:
+        return "Zone Member Removed"
+    if method == "PUT" and "/members/" in path:
+        return "Zone Member Role Updated"
+    if method == "POST" and "/members" in path:
+        return "Zone Member Added"
+    if method == "PUT" and "/sites" in path:
+        return "Zone Sites Updated"
+    if method == "DELETE":
+        return "Zone Deleted"
+    return None
+
+
+def _extract_jwt_email(request: Request):
+    """Try to extract email from Insight JWT without raising."""
+    try:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            payload = verify_insight_token(auth.split(" ", 1)[1])
+            return payload.get("sub")
+    except Exception:
+        pass
+    return None
+
 
 class GlobalLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        # Only log state-changing methods for config/sync operations
         if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
             return await call_next(request)
 
-        endpoint_path = str(request.url.path)
+        path = str(request.url.path)
 
-        # Define the specific config/clone endpoints we want to log
-        config_endpoints = {
-            "/api/cloner/apply": "Clone Complete Config",
-            "/api/cloner/sync-password": "Update PSK (Password)",
-            "/api/cloner/sync-config": "Sync SSID Config",
-            "/api/cloner/sync-delete": "Delete SSID",
-            "/api/cloner/sync-create": "Create SSID"
-        }
-
-        # Skip logging if it's not a config endpoint and determine the friendly action name
-        action_name = "API_CALL"
-        is_config_action = False
-
-        for ep, friendly_name in config_endpoints.items():
-            if endpoint_path.endswith(ep) or endpoint_path == ep:
-                action_name = friendly_name
-                is_config_action = True
-                break
-
-        if not is_config_action:
+        # Resolve action label
+        action_name = _EXACT_ACTIONS.get(path)
+        if action_name is None:
+            action_name = _resolve_zone_action(path, request.method)
+        if action_name is None:
             return await call_next(request)
 
-        # Xác định actor từ header X-Insight-User (stateless — không tra DB)
-        actor_email = request.headers.get("X-Insight-User", "anonymous")
+        # Identity: prefer JWT sub, fall back to X-Insight-User header
+        actor_email = _extract_jwt_email(request) or request.headers.get("X-Insight-User", "anonymous")
 
-        # 2. Extract basic info
         method = request.method
-        endpoint = str(request.url.path)
         ip_address = request.client.host if request.client else None
 
-        # 3. Read request body safely
+        # Extract contextual IDs from path
+        site_match = _SITE_ID_RE.search(path)
+        site_id = site_match.group(1) if site_match else None
+        zone_match = _ZONE_ID_RE.search(path)
+        zone_id = zone_match.group(1) if zone_match else None
+
+        # Detect master token usage (any cloner/config/overview/inventory call = master)
+        master_account_used = any(seg in path for seg in ["/cloner/", "/config/", "/overview/", "/inventory/"])
+
+        # Read request body safely
         body_bytes = await request.body()
         payload_data = None
         if body_bytes:
             try:
-                payload_data = json.loads(body_bytes.decode('utf-8'))
-                # Completely remove sensitive fields
+                payload_data = json.loads(body_bytes.decode("utf-8"))
                 if isinstance(payload_data, dict):
-                    keys_to_delete = [
-                        k for k in payload_data.keys()
-                        if "password" in k.lower() or "token" in k.lower()
-                    ]
-                    for key in keys_to_delete:
+                    for key in [k for k in payload_data if "password" in k.lower() or "token" in k.lower()]:
                         del payload_data[key]
             except Exception:
-                payload_data = {"raw": body_bytes.decode('utf-8', errors='ignore')}
+                payload_data = {"raw": body_bytes.decode("utf-8", errors="ignore")}
 
-        # Since we consumed the body, we must create a new receive fn for the stream to read it again
+        # Extract site_id from body too (sync ops send target_site_ids)
+        if not site_id and isinstance(payload_data, dict):
+            ids = payload_data.get("target_site_ids") or payload_data.get("site_id")
+            if isinstance(ids, list) and ids:
+                site_id = ids[0]
+            elif isinstance(ids, str):
+                site_id = ids
+
+        receive_called = False
         async def receive():
-            return {"type": "http.request", "body": body_bytes}
+            nonlocal receive_called
+            if receive_called:
+                return {"type": "http.disconnect"}
+            receive_called = True
+            return {"type": "http.request", "body": body_bytes, "more_body": False}
 
         request._receive = receive
 
-        # 4. Proceed with the request
+        status_code = 500
         try:
             response = await call_next(request)
             status_code = response.status_code
         except Exception as e:
-            status_code = 500
             raise e
         finally:
-            # 5. Save audit log asynchronously using asyncio.create_task (Fire and Forget)
+            # Try to determine admin_master_id if possible
+            # Simplified to Master System for now unless a specific account is known
+            admin_master_id = "Master System" if master_account_used else None
+            
+            # Use 'target_zone_ids' if present in body
+            if not zone_id and isinstance(payload_data, dict):
+                z_ids = payload_data.get("target_zone_ids")
+                if isinstance(z_ids, list) and z_ids:
+                    zone_id = z_ids[0] # Track primary target zone
+            
+            status_text = "SUCCESS" if 200 <= status_code < 300 else "ERROR"
+            
             log_entry = {
                 "timestamp": datetime.now(timezone.utc),
-                "actor_email": actor_email,
+                "insight_user_id": actor_email,
+                "admin_master_id": admin_master_id,
+                "action": action_name,
+                "zone_id": zone_id,
+                "site_id": site_id,
+                "status": status_text,
                 "method": method,
-                "endpoint": endpoint,
+                "endpoint": path,
                 "payload": payload_data,
                 "ip_address": ip_address,
                 "statusCode": status_code,
-                "action": action_name
             }
             asyncio.create_task(insert_audit_log(log_entry))
 

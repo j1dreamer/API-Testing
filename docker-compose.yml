@@ -11,9 +11,12 @@ services:
       - ./sources/insight/.env
     environment:
       # Ép dùng con MongoDB "lão làng" của anh
-      - MONGODB_URL=mongodb://MongoDB:27017 
+      - MONGODB_URL=mongodb://MongoDB:27017
       # Thêm dòng này để log sạch đẹp, không còn cảnh báo bảo mật
-      - INTERNAL_APP_AUTH=CuongDeploy_Secret_2026 
+      - INTERNAL_APP_AUTH=CuongDeploy_Secret_2026
+      # QUAN TRỌNG: Master token manager dùng asyncio.create_task — phải chạy single worker
+      # Nếu dùng nhiều workers, mỗi worker sẽ tạo một background task riêng → N lần hit Aruba SSO
+      - WEB_CONCURRENCY=1
     ports:
       - "3003:8001"
     extra_hosts:

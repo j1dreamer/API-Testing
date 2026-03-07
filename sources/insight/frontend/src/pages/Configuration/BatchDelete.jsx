@@ -1,19 +1,23 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../../api/apiClient';
 import {
     Trash2, Play, Square, AlertTriangle, CheckCircle,
-    XCircle, ShieldAlert, List, RefreshCw, KeyRound, AlertOctagon, CheckSquare, Square as SquareIcon
+    XCircle, ShieldAlert, List, RefreshCw, KeyRound, AlertOctagon, CheckSquare, Square as SquareIcon, Map
 } from 'lucide-react';
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const CHALLENGE_WORD = 'DELETE';
 const REQUIRED_PASSKEY = 'AITC-ADMIN';
 
 const BatchDelete = () => {
+    const [zones, setZones] = useState([]);
+    const [selectedZones, setSelectedZones] = useState(new Set());
+    const [isLoadingZones, setIsLoadingZones] = useState(false);
+
     const [sites, setSites] = useState([]);
-    const [selectedSites, setSelectedSites] = useState(new Set());
+    const [selectedSites, setSelectedSites] = useState([]);
     const [isLoadingSites, setIsLoadingSites] = useState(false);
+
+    const [activeTab, setActiveTab] = useState('zones'); // 'zones' or 'sites'
 
     // Passkey state
     const [isUnlocked, setIsUnlocked] = useState(false);
@@ -25,19 +29,45 @@ const BatchDelete = () => {
     const [challengeInput, setChallengeInput] = useState('');
 
     const [isRunning, setIsRunning] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [logs, setLogs] = useState([]);
-    const stopRef = useRef(false);
     const mountedRef = useRef(true);
+
+    const scanZones = async () => {
+        setIsLoadingZones(true);
+        setSelectedZones(new Set()); // Reset selection on scan
+        try {
+            const res = await apiClient.get('/zones/my');
+            const list = Array.isArray(res.data) ? res.data : [];
+            if (mountedRef.current) setZones(list.sort((a, b) => a.name.localeCompare(b.name)));
+        } catch (err) {
+            console.error(err);
+            if (mountedRef.current) setZones([]);
+        } finally {
+            if (mountedRef.current) setIsLoadingZones(false);
+        }
+    };
 
     const scanSites = async () => {
         setIsLoadingSites(true);
-        setSelectedSites(new Set()); // Reset selection on scan
+        setSelectedSites([]);
         try {
             const res = await apiClient.get('/overview/sites');
-            const list = Array.isArray(res.data) ? res.data : (res.data?.sites || []);
-            if (mountedRef.current) setSites(list);
+            const rawList = Array.isArray(res.data?.sites) ? res.data.sites : [];
+            // Normalize IDs to ensure every site has an 'id' property
+            const list = rawList.map(s => ({
+                ...s,
+                id: s.id || s.siteId || s.site_id
+            }));
+
+            const adminSites = list.filter(s => {
+                const r = (s.role || '').toLowerCase();
+                const rawR = (s.aruba_role_raw || '').toLowerCase();
+                const isAdmin = r.startsWith('admin') || rawR.startsWith('admin');
+                return isAdmin && s.id; // Must have a valid ID now
+            });
+            if (mountedRef.current) setSites(adminSites.sort((a, b) => (a.siteName || '').localeCompare(b.siteName || '')));
         } catch (err) {
+            console.error(err);
             if (mountedRef.current) setSites([]);
         } finally {
             if (mountedRef.current) setIsLoadingSites(false);
@@ -45,35 +75,44 @@ const BatchDelete = () => {
     };
 
     useEffect(() => {
+        scanZones();
         scanSites();
         mountedRef.current = true;
         return () => { mountedRef.current = false; };
     }, []);
 
-    // Only allow deletion of sites where the user is an administrator
-    const adminSites = useMemo(() => {
-        return sites.filter(s => {
-            const role = (s.role || '').toLowerCase();
-            return role === 'administrator' || role === 'admin';
-        });
-    }, [sites]);
-
     const handleSelectAll = () => {
-        if (selectedSites.size === adminSites.length && adminSites.length > 0) {
-            setSelectedSites(new Set());
+        if (selectedZones.size === zones.length && zones.length > 0) {
+            setSelectedZones(new Set());
         } else {
-            setSelectedSites(new Set(adminSites.map(s => s.siteId)));
+            setSelectedZones(new Set(zones.map(z => z.id)));
+        }
+    };
+
+    const toggleZone = (zoneId) => {
+        const newSet = new Set(selectedZones);
+        if (newSet.has(zoneId)) {
+            newSet.delete(zoneId);
+        } else {
+            newSet.add(zoneId);
+        }
+        setSelectedZones(newSet);
+    };
+
+    const handleSelectAllSites = () => {
+        if (selectedSites.length === sites.length && sites.length > 0) {
+            setSelectedSites([]);
+        } else {
+            setSelectedSites(sites.map(s => s.id));
         }
     };
 
     const toggleSite = (siteId) => {
-        const newSet = new Set(selectedSites);
-        if (newSet.has(siteId)) {
-            newSet.delete(siteId);
-        } else {
-            newSet.add(siteId);
-        }
-        setSelectedSites(newSet);
+        setSelectedSites(prev =>
+            prev.includes(siteId)
+                ? prev.filter(id => id !== siteId)
+                : [...prev, siteId]
+        );
     };
 
     const handleOpenModal = () => {
@@ -88,92 +127,81 @@ const BatchDelete = () => {
 
     const canConfirmDestruction = challengeInput === CHALLENGE_WORD && !isRunning;
 
+    const targetZones = zones.filter(z => selectedZones.has(z.id));
+    const totalSitesSelected = targetZones.reduce((sum, z) => sum + (z.site_count || 0), 0);
+    const totalExecutionSites = totalSitesSelected + selectedSites.length;
+
     const handleStart = async () => {
         setShowModal(false); // Close modal on start
-        stopRef.current = false;
         setIsRunning(true);
-        setProgress(0);
 
-        const targetSites = adminSites.filter(s => selectedSites.has(s.siteId));
-        const total = targetSites.length;
+        // --- Security Validation Phase ---
+        const adminSiteIds = new Set(sites.map(s => s.id));
+        const finalTargets = new Set(selectedSites);
+        let skipCount = 0;
 
-        const initialLogs = targetSites.map((site, i) => ({
-            id: `delete-${i}`,
-            siteId: site.siteId,
-            name: site.siteName || site.siteId,
-            status: 'pending',
-            msg: 'Waiting...'
-        }));
-        setLogs(initialLogs);
-
-        for (let i = 0; i < total; i++) {
-            if (stopRef.current) {
-                setLogs(prev => prev.map((l, idx) =>
-                    idx >= i ? { ...l, status: 'stopped', msg: 'Stopped by user' } : l
-                ));
-                break;
-            }
-
-            const site = targetSites[i];
-            const now = new Date();
-            const timeStr = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
-
-            setLogs(prev => prev.map((l, idx) =>
-                idx === i ? { ...l, status: 'running', msg: `${timeStr} Deleting Site '${site.siteName}'...` } : l
-            ));
-
-            try {
-                // Warning: Extreme Caution Required
-                await apiClient.delete(`/replay/api/sites/${site.siteId}`);
-                if (!mountedRef.current) return;
-                setLogs(prev => prev.map((l, idx) =>
-                    idx === i ? { ...l, status: 'ok', msg: `${timeStr} Deleting Site '${site.siteName}'... SUCCESS` } : l
-                ));
-            } catch (err) {
-                if (!mountedRef.current) return;
-                const status = err.response?.status;
-                const errMsg = err.response?.data?.detail || err.message || 'Unknown error';
-
-                let logMsg = `${timeStr} Deleting Site '${site.siteName}'... FAILED`;
-                if (status === 401 || status === 403) logMsg += ' (Unauthorized)';
-                else if (status === 404) logMsg += ' (Not Found)';
-                else logMsg += ` (${errMsg})`;
-
-                setLogs(prev => prev.map((l, idx) =>
-                    idx === i ? { ...l, status: 'error', msg: logMsg } : l
-                ));
-
-                // Optional: Pause on catastrophic errors, but we might want to continue deleting other sites.
-                // For now, let's pause on auth/rate-limit to protect the token.
-                if (status === 429 || status === 401 || status === 403 || status >= 500) {
-                    stopRef.current = true;
-                    setLogs(prev => [...prev, { id: `sys-err-${i}`, name: 'System Paused', status: 'error', msg: 'Emergency Stop: Batch paused due to critical API error.' }]);
-                    break;
+        // Resolve selected Zones to Admin Sites
+        targetZones.forEach(z => {
+            (z.site_ids || []).forEach(sid => {
+                if (adminSiteIds.has(sid)) {
+                    finalTargets.add(sid);
+                } else {
+                    skipCount++;
                 }
-            }
+            });
+        });
+
+        const initialLogs = [];
+        if (skipCount > 0) {
+            initialLogs.push({ id: 'security-skip', status: 'error', msg: `Security Notice: Automatically skipped ${skipCount} sites with insufficient permissions (Viewer).` });
+        }
+
+        const finalTargetArray = Array.from(finalTargets).filter(id => typeof id === 'string' && id.length > 0);
+
+        if (finalTargetArray.length === 0) {
+            setLogs([...initialLogs, { id: 'done', status: 'error', msg: 'Zero authorized targets found from selected Zones/Sites. Aborting.' }]);
+            setIsRunning(false);
+            return;
+        }
+
+        setLogs([...initialLogs, { id: 'init', status: 'running', msg: `Initiating batch deletion for ${finalTargetArray.length} sites...` }]);
+
+        try {
+            // Send exactly what the Pydantic model 'BatchDeleteRequest' expects
+            const payload = {
+                target_zone_ids: [], // We already resolved them into target_site_ids for granular logging
+                target_site_ids: finalTargetArray
+            };
+            const res = await apiClient.post('/cloner/batch-site-delete', payload);
 
             if (!mountedRef.current) return;
-            setProgress(i + 1);
 
-            if (i < total - 1 && !stopRef.current) {
-                await delay(2000); // Strict 2 second delay for safety
-                if (!mountedRef.current) return;
+            if (res.data?.status === 'success') {
+                const results = res.data.results || [];
+                const formattedLogs = results.map((r, idx) => ({
+                    id: `res-${idx}`,
+                    status: r.status === 'SUCCESS' ? 'ok' : 'error',
+                    msg: `Site ${r.target}: ${r.status === 'SUCCESS' ? 'Deleted Successfully' : (r.detail?.message || r.detail || 'Failed')}`
+                }));
+                setLogs(prev => [
+                    ...prev,
+                    { id: 'done', status: 'ok', msg: `Batch deletion completed. Processed ${results.length} sites.` },
+                    ...formattedLogs
+                ]);
+            } else {
+                setLogs([{ id: 'err', status: 'error', msg: `API returned unexpected status: ${res.data?.status}` }]);
+            }
+        } catch (err) {
+            if (!mountedRef.current) return;
+            setLogs([{ id: 'err-catch', status: 'error', msg: `Critical Error: ${err.response?.data?.detail || err.message}` }]);
+        } finally {
+            if (mountedRef.current) {
+                setIsRunning(false);
+                scanZones(); // refresh list
+                scanSites(); // refresh list
             }
         }
-
-        if (mountedRef.current) {
-            setIsRunning(false);
-            // Refresh sites after batch delete completes
-            scanSites();
-        }
     };
-
-    const handleStop = () => {
-        stopRef.current = true;
-    };
-
-    const progressPct = selectedSites.size > 0 ? Math.round((progress / selectedSites.size) * 100) : 0;
-    const targetSites = adminSites.filter(s => selectedSites.has(s.siteId));
 
     const handleUnlock = (e) => {
         e.preventDefault();
@@ -247,127 +275,201 @@ const BatchDelete = () => {
                             Batch Site Deletion
                             <span className="bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 text-[9px] font-black uppercase px-2 py-0.5 rounded border border-rose-200 dark:border-rose-500/30">High Risk</span>
                         </h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Permanently destroy multiple sites. This action cannot be undone.</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Permanently destroy multiple sites across selected Zones. This action cannot be undone.</p>
                     </div>
                 </div>
 
+                {/* Preview Summary */}
+                {(selectedZones.size > 0 || selectedSites.length > 0) && !isRunning && (
+                    <div className="p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-2xl mb-4 animate-fade-in">
+                        <h4 className="text-sm font-bold text-rose-800 dark:text-rose-300 mb-1">Execution Preview</h4>
+                        <p className="text-xs text-rose-600 dark:text-rose-400 leading-relaxed">
+                            Tổng hợp: <strong className="text-rose-700 dark:text-rose-300">{selectedZones.size}</strong> Zone và <strong className="text-rose-700 dark:text-rose-300">{selectedSites.length}</strong> Site lẻ.
+                            Hệ thống sẽ xóa tổng cộng <strong className="text-rose-700 dark:text-rose-300">{totalExecutionSites}</strong> Site.
+                        </p>
+                        {(() => {
+                            const adminSiteIds = new Set(sites.map(s => s.id));
+                            let skippedViewerCount = 0;
+                            targetZones.forEach(z => {
+                                (z.site_ids || []).forEach(sid => {
+                                    if (!adminSiteIds.has(sid)) skippedViewerCount++;
+                                });
+                            });
+                            if (skippedViewerCount > 0) {
+                                return (
+                                    <div className="mt-2 flex items-start gap-2 p-2 bg-white dark:bg-black/20 rounded-lg border border-rose-200 dark:border-rose-500/20">
+                                        <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+                                            Warning: Phát hiện {skippedViewerCount} Site trong Zone là "Viewer". Các site này sẽ tự động bị bỏ qua để bảo mật.
+                                        </p>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
+                    </div>
+                )}
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                    {/* Panel 1: Site Selection (Scan & Select) */}
+                    {/* Panel 1: Zone & Site Selection */}
                     <div className="backdrop-blur-2xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col gap-5 shadow-xl dark:shadow-none min-h-[500px]">
                         <div className="flex items-center justify-between">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                <List size={14} className="text-rose-500" /> Source Sites
+                                <Map size={14} className="text-rose-500" /> Source Targets
                             </h3>
                             <button
-                                onClick={scanSites}
-                                disabled={isLoadingSites || isRunning}
+                                onClick={() => { scanZones(); scanSites(); }}
+                                disabled={isLoadingZones || isLoadingSites || isRunning}
                                 className="flex items-center gap-1.5 text-[10px] font-bold uppercase hover:text-rose-500 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-50"
                             >
-                                <RefreshCw size={12} className={isLoadingSites ? 'animate-spin' : ''} />
-                                Scan Sites
+                                <RefreshCw size={12} className={isLoadingZones || isLoadingSites ? 'animate-spin' : ''} />
+                                Refresh
                             </button>
                         </div>
 
-                        {isLoadingSites ? (
-                            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600">
-                                <RefreshCw size={36} strokeWidth={1} className="animate-spin" />
-                                <p className="text-xs text-center">Scanning accessible sites...</p>
-                            </div>
-                        ) : adminSites.length === 0 ? (
-                            <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600 px-4">
-                                <ShieldAlert size={36} strokeWidth={1} className="text-amber-500/50" />
-                                <p className="text-xs text-center">You do not possess Administrator privileges on any active sites.</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex flex-col gap-2 p-3 bg-rose-50 dark:bg-rose-500/5 border border-rose-200 dark:border-rose-500/20 rounded-xl mb-2">
-                                    <div className="flex items-start gap-2 text-rose-700 dark:text-rose-400">
-                                        <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                                        <p className="text-[10px] font-bold uppercase tracking-wide">Warning: Only Administrator sites are shown. Selected sites will be permanently deleted.</p>
-                                    </div>
+                        <div className="flex gap-2 p-1 bg-slate-100 dark:bg-black/40 rounded-xl relative">
+                            <button
+                                onClick={() => setActiveTab('zones')}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'zones' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm border border-slate-200 dark:border-white/10' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                            >
+                                Quản lý theo Zone
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('sites')}
+                                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'sites' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm border border-slate-200 dark:border-white/10' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                            >
+                                Chọn Site lẻ
+                            </button>
+                        </div>
+
+                        {activeTab === 'zones' ? (
+                            isLoadingZones ? (
+                                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600">
+                                    <RefreshCw size={36} strokeWidth={1} className="animate-spin" />
+                                    <p className="text-xs text-center">Loading zones...</p>
                                 </div>
-                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
-                                    <button
-                                        onClick={handleSelectAll}
-                                        disabled={isRunning}
-                                        className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
-                                    >
-                                        {selectedSites.size === adminSites.length ? (
-                                            <><CheckSquare size={16} className="text-rose-500" /> Deselect All</>
-                                        ) : (
-                                            <><SquareIcon size={16} className="text-slate-400" /> Select All</>
-                                        )}
-                                    </button>
-                                    <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-[10px] font-bold">
-                                        <span className="text-rose-500">{selectedSites.size}</span> / {adminSites.length}
-                                    </span>
+                            ) : zones.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600 px-4">
+                                    <ShieldAlert size={36} strokeWidth={1} className="text-amber-500/50" />
+                                    <p className="text-xs text-center">You don't have access to any Zones.</p>
                                 </div>
-                                <div className="flex-1 overflow-y-auto max-h-[360px] pr-2 space-y-2 custom-scrollbar">
-                                    {adminSites.map(site => (
-                                        <div
-                                            key={site.siteId}
-                                            onClick={() => !isRunning && toggleSite(site.siteId)}
-                                            className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedSites.has(site.siteId)
-                                                ? 'bg-rose-50/50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30'
-                                                : 'bg-white dark:bg-black/20 border-slate-100 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
-                                                } ${isRunning ? 'opacity-50 pointer-events-none' : ''}`}
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
+                                        <button
+                                            onClick={handleSelectAll}
+                                            disabled={isRunning}
+                                            className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
                                         >
-                                            <div className="shrink-0 flex items-center justify-center">
-                                                {selectedSites.has(site.siteId) ? (
-                                                    <CheckSquare size={18} className="text-rose-600 dark:text-rose-400" />
-                                                ) : (
-                                                    <SquareIcon size={18} className="text-slate-300 dark:text-slate-600" />
-                                                )}
+                                            {selectedZones.size === zones.length ? (
+                                                <><CheckSquare size={16} className="text-rose-500" /> Deselect All</>
+                                            ) : (
+                                                <><SquareIcon size={16} className="text-slate-400" /> Select All</>
+                                            )}
+                                        </button>
+                                        <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-[10px] font-bold">
+                                            <span className="text-rose-500">{selectedZones.size}</span> / {zones.length}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto max-h-[360px] pr-2 space-y-2 custom-scrollbar">
+                                        {zones.map(zone => (
+                                            <div
+                                                key={zone.id}
+                                                onClick={() => !isRunning && toggleZone(zone.id)}
+                                                className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedZones.has(zone.id)
+                                                    ? 'bg-rose-50/50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30'
+                                                    : 'bg-white dark:bg-black/20 border-slate-100 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
+                                                    } ${isRunning ? 'opacity-50 pointer-events-none' : ''}`}
+                                            >
+                                                <div className="shrink-0 flex items-center justify-center">
+                                                    {selectedZones.has(zone.id) ? (
+                                                        <CheckSquare size={18} className="text-rose-600 dark:text-rose-400" />
+                                                    ) : (
+                                                        <SquareIcon size={18} className="text-slate-300 dark:text-slate-600" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{zone.name}</p>
+                                                    <p className="text-[10px] font-mono text-slate-500 truncate">{zone.site_count || 0} Sites</p>
+                                                </div>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{site.siteName}</p>
-                                                <p className="text-[10px] font-mono text-slate-500 truncate">{site.siteId}</p>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
+                                </>
+                            )
+                        ) : (
+                            isLoadingSites ? (
+                                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600">
+                                    <RefreshCw size={36} strokeWidth={1} className="animate-spin" />
+                                    <p className="text-xs text-center">Loading sites...</p>
                                 </div>
-                            </>
+                            ) : sites.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-600 px-4">
+                                    <ShieldAlert size={36} strokeWidth={1} className="text-amber-500/50" />
+                                    <p className="text-xs text-center">No available sites found.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-3">
+                                        <button
+                                            onClick={handleSelectAllSites}
+                                            disabled={isRunning}
+                                            className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors disabled:opacity-50"
+                                        >
+                                            {selectedSites.length === sites.length && sites.length > 0 ? (
+                                                <><CheckSquare size={16} className="text-rose-500" /> Deselect All</>
+                                            ) : (
+                                                <><SquareIcon size={16} className="text-slate-400" /> Select All</>
+                                            )}
+                                        </button>
+                                        <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded font-mono text-[10px] font-bold">
+                                            <span className="text-rose-500">{selectedSites.length}</span> / {sites.length}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto max-h-[360px] pr-2 space-y-2 custom-scrollbar">
+                                        {sites.map(site => (
+                                            <div
+                                                key={site.id}
+                                                onClick={() => !isRunning && toggleSite(site.id)}
+                                                className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${selectedSites.includes(site.id)
+                                                    ? 'bg-rose-50/50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30'
+                                                    : 'bg-white dark:bg-black/20 border-slate-100 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20'
+                                                    } ${isRunning ? 'opacity-50 pointer-events-none' : ''}`}
+                                            >
+                                                <div className="shrink-0 flex items-center justify-center">
+                                                    {selectedSites.includes(site.id) ? (
+                                                        <CheckSquare size={18} className="text-rose-600 dark:text-rose-400" />
+                                                    ) : (
+                                                        <SquareIcon size={18} className="text-slate-300 dark:text-slate-600" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-800 dark:text-white truncate">{site.siteName}</p>
+                                                    <p className="text-[10px] font-mono text-slate-500 truncate">{site.id}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )
                         )}
                         <div className="mt-4 pt-2 border-t border-slate-100 dark:border-white/5">
                             <button
                                 onClick={handleOpenModal}
-                                disabled={selectedSites.size === 0 || isRunning}
+                                disabled={(selectedZones.size === 0 && selectedSites.size === 0) || isRunning}
                                 className="w-full h-12 bg-gradient-to-r from-rose-600 to-red-600 text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-[0_10px_30px_rgba(225,29,72,0.2)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-25 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
-                                <Trash2 size={16} /> Delete Selected ({selectedSites.size})
+                                <Trash2 size={16} /> Delete {totalExecutionSites} Sites
                             </button>
                         </div>
                     </div>
 
-                    {/* Panel 2: Live Execution Log */}
+                    {/* Panel 2: Execution Log */}
                     <div className="backdrop-blur-2xl bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-3xl p-6 flex flex-col gap-4 shadow-xl dark:shadow-none min-h-[500px]">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                            <Play size={14} className="text-rose-500" /> Deletion Log
+                            <Play size={14} className="text-rose-500" /> Execution Log
                         </h3>
-
-                        {logs.length > 0 && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-slate-500">
-                                        {isRunning
-                                            ? `Destroying ${progress} of ${selectedSites.size}...`
-                                            : progress === selectedSites.size
-                                                ? `Destruction Complete: ${selectedSites.size} sites removed.`
-                                                : `Emergency Stop at ${progress} of ${selectedSites.size}`}
-                                    </span>
-                                    <span className="text-[10px] font-black text-rose-600 dark:text-rose-400">
-                                        {progressPct}%
-                                    </span>
-                                </div>
-                                <div className="h-2 w-full bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-500 ${isRunning ? 'bg-gradient-to-r from-rose-500 to-red-500' : progress === selectedSites.size ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                                        style={{ width: `${progressPct}%` }}
-                                    />
-                                </div>
-                            </div>
-                        )}
 
                         <div className="flex-1 overflow-y-auto max-h-[380px] space-y-1.5 font-mono pr-1 custom-scrollbar">
                             {logs.length === 0 ? (
@@ -385,9 +487,7 @@ const BatchDelete = () => {
                                                 ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/10'
                                                 : log.status === 'running'
                                                     ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/10 animate-pulse'
-                                                    : log.status === 'stopped'
-                                                        ? 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/10'
-                                                        : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5'
+                                                    : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/5'
                                             }`}
                                     >
                                         <span className="shrink-0 mt-0.5">
@@ -395,10 +495,6 @@ const BatchDelete = () => {
                                             {log.status === 'error' && <XCircle size={12} className="text-rose-500" />}
                                             {log.status === 'running' && (
                                                 <div className="w-3 h-3 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-                                            )}
-                                            {log.status === 'stopped' && <Square size={12} className="text-slate-400" />}
-                                            {log.status === 'pending' && (
-                                                <div className="w-3 h-3 rounded-full border border-slate-300 dark:border-slate-600" />
                                             )}
                                         </span>
                                         <div className="flex-1 min-w-0">
@@ -410,17 +506,6 @@ const BatchDelete = () => {
                                 ))
                             )}
                         </div>
-
-                        {isRunning && (
-                            <div className="mt-4 pt-2 border-t border-slate-100 dark:border-white/5">
-                                <button
-                                    onClick={handleStop}
-                                    className="w-full h-12 bg-black dark:bg-white/10 text-rose-500 dark:text-rose-400 border border-black dark:border-rose-500/30 font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl hover:bg-slate-900 dark:hover:bg-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
-                                >
-                                    <Square size={16} /> EMERGENCY STOP
-                                </button>
-                            </div>
-                        )}
                     </div>
 
                 </div>
@@ -439,18 +524,8 @@ const BatchDelete = () => {
                             </div>
                             <h2 className="text-xl font-black text-center text-slate-900 dark:text-white mb-2">Confirm Destruction</h2>
                             <p className="text-sm text-center text-slate-600 dark:text-slate-400 mb-6">
-                                You are about to permanently delete <strong className="text-rose-600 dark:text-rose-400">{selectedSites.size}</strong> site(s). This action will erase all configurations and data. It cannot be undone.
+                                You are about to permanently delete <strong className="text-rose-600 dark:text-rose-400">{totalExecutionSites}</strong> selected site(s). This action cannot be undone.
                             </p>
-
-                            <div className="bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/5 rounded-xl p-3 mb-6 max-h-32 overflow-y-auto custom-scrollbar">
-                                <ul className="space-y-1">
-                                    {targetSites.map(s => (
-                                        <li key={s.siteId} className="text-xs font-mono text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                            <XCircle size={10} className="text-rose-500 shrink-0" /> <span className="truncate">{s.siteName}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
 
                             <div className="flex flex-col gap-2 mb-4">
                                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 text-center">

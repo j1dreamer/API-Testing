@@ -141,7 +141,7 @@ const Health = () => {
         setError('');
         setSelectedIndex(null);
         try {
-            const res = await apiClient.get(`/replay/api/sites/${siteId}/health`);
+            const res = await apiClient.get(`/overview/sites/${siteId}/health`);
             setData(res.data);
         } catch (err) {
             console.error('Health fetch error:', err);

@@ -49,7 +49,7 @@ const SiteDetail = () => {
         try {
             const [infoRes, dashRes] = await Promise.all([
                 apiClient.get(`/overview/sites/${siteId}`),
-                apiClient.get(`/replay/api/sites/${siteId}/dashboard`),
+                apiClient.get(`/overview/sites/${siteId}/dashboard`),
             ]);
             setSiteInfo(infoRes.data);
             setData(dashRes.data);

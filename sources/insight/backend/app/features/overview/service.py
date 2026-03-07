@@ -78,13 +78,21 @@ class OverviewService:
 
             sites: List[Dict[str, Any]] = []
             for node in raw_elements:
-                # Extract verbatim from each site element — never fall back to app-level role
-                aruba_role_raw: str = node.get("userRoleOnSite") or ""
-                raw_role: str = aruba_role_raw.strip().lower()
+                aruba_role_raw: str = (node.get("userRoleOnSite") or node.get("role") or "").strip()
+                raw_role: str = aruba_role_raw.lower()
+                
+                # Robust role mapping
+                mapped_role = "view"
+                if raw_role.startswith("admin"): mapped_role = "admin"
+                elif raw_role.startswith("op"): mapped_role = "op"
+                elif raw_role.startswith("view"): mapped_role = "view"
+                elif raw_role.startswith("guest"): mapped_role = "guest"
+
                 sites.append({
-                    "siteId":                node.get("id") or node.get("siteId"),
-                    "siteName":              node.get("name") or node.get("siteName", "Unknown"),
-                    "role":                  _ARUBA_ROLE_MAP.get(raw_role, "view"),
+                    "id":                    node.get("id") or node.get("siteId") or node.get("site_id"),
+                    "siteId":                node.get("id") or node.get("siteId") or node.get("site_id"),
+                    "siteName":              node.get("name") or node.get("siteName") or node.get("site_name", "Unknown"),
+                    "role":                  mapped_role,
                     "aruba_role_raw":        aruba_role_raw if aruba_role_raw else "unknown",
                     "insight_app_role":      insight_app_role,
                     # Enriched fields for Sites Grid UI
@@ -94,6 +102,16 @@ class OverviewService:
                     "activeAlertsCounters":  node.get("activeAlertsCounters", {}),
                     "historyDurationSeconds": node.get("historyDurationSeconds", 86400),
                 })
+
+            # --- Bước 4: Zone filter — non-global-admin chỉ thấy sites trong zones của mình ---
+            from app.config import SUPER_ADMIN_EMAILS
+            from app.database.zones_crud import get_site_ids_for_user_zones
+
+            is_global_admin = insight_app_role in ("super_admin", "tenant_admin") or (caller_email in SUPER_ADMIN_EMAILS)
+            if not is_global_admin and caller_email:
+                allowed_ids = await get_site_ids_for_user_zones(caller_email)
+                allowed_set = set(allowed_ids)
+                sites = [s for s in sites if s.get("siteId") in allowed_set]
 
             return sites
 

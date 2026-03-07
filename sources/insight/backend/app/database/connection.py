@@ -1,9 +1,11 @@
 """MongoDB connection manager using Motor async driver.
 
-Architecture constraint (stateless_architecture.md):
-  - Connect ONLY to insight DB at localhost:27017.
-  - NEVER store tokens, passwords, or sessions in the database.
-  - Only `users` (identity + app role) and `audit_logs` collections are permitted.
+Collections:
+  - users        — identity + internal app role
+  - audit_logs   — 90-day TTL audit trail
+  - zones        — zone/group definitions with site assignments and members
+  - tenants      — customer/company records with assigned tenant_admin
+  - master_config — singleton Aruba master account config + token cache
 """
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import MONGODB_URL, DATABASE_NAME
@@ -22,9 +24,21 @@ async def connect_to_mongo():
     host_port = f"{node_info[0]}:{node_info[1]}" if node_info else "localhost:27017"
     print(f"INFO: Connected to MongoDB at {host_port} (Database: {DATABASE_NAME})")
 
-    # === Permitted collections: users + audit_logs ONLY (Strict Policy) ===
+    # === Core collections ===
     await db.users.create_index("email", unique=True)
     await db.audit_logs.create_index("timestamp", expireAfterSeconds=7776000)
+
+    # === Zone management collections ===
+    await db.zones.create_index("name", unique=True)
+    await db.zones.create_index("members.email")
+    await db.zones.create_index("site_ids")
+
+    # === Tenants (customers/companies) ===
+    await db.tenants.create_index("name", unique=True)
+    await db.tenants.create_index("admin_email", sparse=True)
+
+    # === Master account config (singleton) ===
+    await db.master_config.create_index("is_active")
 
 
 async def close_mongo_connection():

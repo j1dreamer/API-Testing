@@ -1,19 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import List
+from fastapi import APIRouter, Depends
+from typing import List, Dict, Any
 from app.features.inventory.schemas import DeviceResponse
 from app.features.inventory.service import inventory_service
+from app.shared.auth_deps import get_current_insight_user, require_master_token
 
 router = APIRouter(prefix="/api/v1/inventory", tags=["Inventory"])
 
-@router.get("/sites/{site_id}/devices", response_model=List[DeviceResponse])
-async def get_devices(site_id: str, request: Request):
-    """
-    Get a sanitized list of devices for a site.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-         raise HTTPException(status_code=401, detail="Missing authorization")
 
-    token = auth_header.split(" ")[1]
-    devices = await inventory_service.get_site_devices(site_id, token)
-    return devices
+@router.get("/sites/{site_id}/devices", response_model=List[DeviceResponse])
+async def get_devices(
+    site_id: str,
+    user: Dict[str, Any] = Depends(get_current_insight_user),
+    master_token: str = Depends(require_master_token),
+):
+    return await inventory_service.get_site_devices(site_id, master_token)

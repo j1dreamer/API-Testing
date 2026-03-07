@@ -154,28 +154,93 @@ class AuthSessionResponse(BaseModel):
 class UserDocument(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     email: str
-    role: str = Field("guest", description="admin, user, or guest")
+    password_hash: Optional[str] = Field(None, description="bcrypt hash — None for super admins seeded via env")
+    role: str = Field("viewer", description="super_admin | tenant_admin | manager | viewer")
     isApproved: bool = Field(False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    parent_admin_id: Optional[str] = Field(None, description="Email của admin đã tạo sub-account này")
+    is_locked: bool = Field(False, description="Nếu True, chỉ super_admin mới edit/delete được")
+
+    class Config:
+        populate_by_name = True
+
 
 class AuditLogDocument(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     actor_email: Optional[str] = None
+    insight_user_id: Optional[str] = None   # MongoDB _id of the Insight user
     method: str
     endpoint: str
     payload: Optional[Dict[str, Any]] = None
     ip_address: Optional[str] = None
     statusCode: int = 0
     action: Optional[str] = None
+    site_id: Optional[str] = None           # Aruba site affected (if applicable)
+    zone_id: Optional[str] = None           # Zone context (if applicable)
+    master_account_used: bool = False       # True if master token was used for Aruba call
+
 
 class LogResponse(BaseModel):
     id: str
     timestamp: str  # Will be formatted in GMT+7
     actor_email: Optional[str]
+    insight_user_id: Optional[str] = None
     method: str
     endpoint: str
     payload: Optional[Dict[str, Any]]
     ip_address: Optional[str]
     statusCode: int
     action: Optional[str]
+    site_id: Optional[str] = None
+    zone_id: Optional[str] = None
+    master_account_used: bool = False
+
+
+# ===== ZONE & MASTER ACCOUNT MODELS =====
+
+class ZoneMemberDocument(BaseModel):
+    email: str
+    zone_role: str = Field(..., description="admin | operator | viewer")
+    assigned_by: str
+    assigned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ZoneDocument(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    name: str
+    description: Optional[str] = None
+    color: str = Field("#3B82F6", description="Hex color for UI card")
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    site_ids: List[str] = Field(default_factory=list)
+    members: List[ZoneMemberDocument] = Field(default_factory=list)
+
+    class Config:
+        populate_by_name = True
+
+
+class MasterConfigDocument(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    linked_by: str
+    linked_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    username: str = Field(..., description="Aruba username")
+    encrypted_password: str = Field(..., description="AES-256 encrypted password")
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    is_active: bool = True
+    refresh_interval_minutes: int = 25
+
+    class Config:
+        populate_by_name = True
+
+
+class MasterStatusResponse(BaseModel):
+    is_linked: bool
+    linked_by: Optional[str] = None
+    linked_at: Optional[str] = None
+    token_expires_at: Optional[str] = None
+    token_age_seconds: Optional[int] = None
+    refresh_interval_minutes: Optional[int] = None

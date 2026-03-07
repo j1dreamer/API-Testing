@@ -1,79 +1,116 @@
-"""Auth dependencies — Two-Track stateless pattern.
+"""Auth dependencies — Insight JWT-based auth + Zone-aware deps.
 
-Track 1 — Internal (require_internal_admin):
-  Reads X-Insight-User header → looks up users collection → checks role + isApproved.
-  Zero Aruba token dependency. Used by Admin, User Management routes.
+All routes authenticate via Insight JWT (HS256, 8 h expiry).
+Aruba operations additionally require a linked Master Account.
 
-Track 2 — Aruba (get_stateless_user / StatelessRoleChecker):
-  Reads Authorization: Bearer <aruba_token> + X-Insight-User header.
-  Identity resolved from the header; token used directly against Aruba API.
-  Used by Cloner, Backup, Rollback, SSID management routes.
+Tier hierarchy:
+  super_admin   → DEV-level, full control, creates tenant_admin accounts
+  tenant_admin  → Tenant master, links 1 Aruba account, manages all sites in tenant, creates manager/viewer
+  manager       → Sub-account, assigned sites by tenant_admin, Full Clone + Smart Sync only
+  viewer        → Sub-account, assigned sites by tenant_admin, read-only
+
+get_current_insight_user   → any authenticated + approved user
+require_super_admin        → super_admin only
+require_internal_admin     → super_admin OR tenant_admin
+is_admin_role(user)        → helper: True if super_admin or tenant_admin
+require_master_token       → returns master Aruba token, 503 if not linked
+
+Zone deps:
+  require_zone_access      → zone member or admin-tier user
+  require_zone_admin       → zone-admin or admin-tier user
 """
 from fastapi import Depends, HTTPException, Request
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from app.shared.jwt_utils import verify_insight_token
 from app.database.auth_crud import get_user_by_email
+from app.database.zones_crud import get_zone_by_id, get_zone_role_for_user
 
 
 # ---------------------------------------------------------------------------
-# Shared helpers
+# Core: resolve user from Insight JWT
 # ---------------------------------------------------------------------------
 
-def _extract_bearer(request: Request) -> str:
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Header Authorization không hợp lệ.")
-    return auth_header.split(" ", 1)[1]
+async def get_current_insight_user(request: Request) -> Dict[str, Any]:
+    """Verify Insight JWT → resolve user from DB → confirm approved."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Thiếu hoặc sai định dạng Authorization header.")
+    token = auth.split(" ", 1)[1]
 
-
-def _extract_user_email(request: Request) -> str:
-    email = request.headers.get("X-Insight-User", "").strip()
+    payload = verify_insight_token(token)  # raises 401 on invalid/expired
+    email = payload.get("sub")
     if not email:
-        raise HTTPException(status_code=401, detail="Thiếu header X-Insight-User.")
-    return email
+        raise HTTPException(status_code=401, detail="Token không hợp lệ.")
 
-
-# ---------------------------------------------------------------------------
-# Track 1 — Internal Admin (DB-only, no Aruba dependency)
-# ---------------------------------------------------------------------------
-
-async def require_internal_admin(request: Request) -> Dict[str, Any]:
-    """Dep for Admin / User-Management routes. Only checks insight DB."""
-    email = _extract_user_email(request)
     user = await get_user_by_email(email)
     if not user:
-        raise HTTPException(status_code=403, detail="Tài khoản chưa được đăng ký trong hệ thống.")
-    if not user.get("isApproved"):
+        raise HTTPException(status_code=403, detail="Tài khoản không tồn tại trong hệ thống.")
+    if not user.get("isApproved", False):
         raise HTTPException(status_code=403, detail="Tài khoản chưa được phê duyệt.")
-    if user.get("role") != "admin":
+
+    # Attach JWT role to user doc for downstream checks
+    user["_jwt_role"] = payload.get("role", user.get("role", "viewer"))
+    return user
+
+
+# ---------------------------------------------------------------------------
+# Role tier helpers
+# ---------------------------------------------------------------------------
+
+def is_admin_role(user: Dict[str, Any]) -> bool:
+    """Return True if user is super_admin or tenant_admin (admin-tier)."""
+    return user.get("role") in ("super_admin", "tenant_admin")
+
+
+# ---------------------------------------------------------------------------
+# Admin-tier deps
+# ---------------------------------------------------------------------------
+
+async def require_super_admin(request: Request) -> Dict[str, Any]:
+    """Super-admin-only gate. DEV-level access."""
+    user = await get_current_insight_user(request)
+    if user.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Yêu cầu quyền Super Admin.")
+    return user
+
+
+async def require_internal_admin(request: Request) -> Dict[str, Any]:
+    """Admin-tier gate (super_admin OR tenant_admin). Used by /admin/* routes."""
+    user = await get_current_insight_user(request)
+    if not is_admin_role(user):
         raise HTTPException(status_code=403, detail="Yêu cầu quyền Admin.")
     return user
 
 
 # ---------------------------------------------------------------------------
-# Track 2 — Stateless Aruba (Bearer token + X-Insight-User header)
+# Master token gate — 503 if master not linked
 # ---------------------------------------------------------------------------
 
-async def get_stateless_user(request: Request) -> Dict[str, Any]:
+async def require_master_token() -> str:
+    """Return the active master Aruba Bearer token.
+
+    Raises HTTP 503 if master account is not linked.
+    Use as Depends() on any route that calls Aruba API.
     """
-    Resolves identity from X-Insight-User header against insight DB.
-    Confirms a Bearer token is present (validated by Aruba on actual API calls).
-    """
-    _extract_bearer(request)           # ensure token is present
-    email = _extract_user_email(request)
-
-    user = await get_user_by_email(email)
-    if not user:
-        raise HTTPException(status_code=403, detail="Tài khoản chưa được đăng ký trong hệ thống.")
-    if not user.get("isApproved"):
-        raise HTTPException(status_code=403, detail="Tài khoản chưa được phê duyệt.")
-    return user
+    from app.database.master_crud import get_master_token
+    token = await get_master_token()
+    if not token:
+        raise HTTPException(
+            status_code=503,
+            detail="Master Account chưa được cấu hình. Liên hệ Admin để liên kết tài khoản Aruba."
+        )
+    return token
 
 
-class StatelessRoleChecker:
+# ---------------------------------------------------------------------------
+# Role-checked convenience deps (built on get_current_insight_user)
+# ---------------------------------------------------------------------------
+
+class RoleChecker:
     def __init__(self, allowed_roles: List[str]):
         self.allowed_roles = allowed_roles
 
-    async def __call__(self, user: Dict[str, Any] = Depends(get_stateless_user)) -> Dict[str, Any]:
+    async def __call__(self, user: Dict[str, Any] = Depends(get_current_insight_user)) -> Dict[str, Any]:
         if user.get("role") not in self.allowed_roles:
             raise HTTPException(
                 status_code=403,
@@ -82,6 +119,47 @@ class StatelessRoleChecker:
         return user
 
 
-# Convenience stateless deps
-require_operator_stateless = StatelessRoleChecker(["admin", "operator"])
-require_admin_stateless    = StatelessRoleChecker(["admin"])
+require_operator = RoleChecker(["super_admin", "tenant_admin"])
+require_admin    = RoleChecker(["super_admin", "tenant_admin"])
+
+
+# ---------------------------------------------------------------------------
+# Zone-aware dependencies
+# ---------------------------------------------------------------------------
+
+async def require_zone_access(zone_id: str, request: Request) -> Dict[str, Any]:
+    """Require caller to be a member of the zone (or admin-tier user).
+
+    Used for: GET zone detail, GET zone logs, GET zone members.
+    """
+    user = await get_current_insight_user(request)
+    if is_admin_role(user):
+        return user
+    zone_role = await get_zone_role_for_user(zone_id, user["email"])
+    if not zone_role:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập vào Zone này.")
+    user["_zone_role"] = zone_role
+    return user
+
+
+async def require_zone_admin(zone_id: str, request: Request) -> Dict[str, Any]:
+    """Require caller to be a zone-level admin (or admin-tier user).
+
+    Used for: PUT zone, POST/PUT/DELETE zone members.
+    """
+    user = await get_current_insight_user(request)
+    if is_admin_role(user):
+        return user
+    zone = await get_zone_by_id(zone_id)
+    if not zone:
+        raise HTTPException(status_code=404, detail="Zone không tồn tại.")
+    zone_role = await get_zone_role_for_user(zone_id, user["email"])
+    if zone_role != "manager":
+        raise HTTPException(status_code=403, detail="Yêu cầu quyền Zone Manager.")
+    user["_zone_role"] = zone_role
+    return user
+
+
+async def get_zone_role(email: str, zone_id: str) -> Optional[str]:
+    """Return the zone_role for an email in a zone, or None if not a member."""
+    return await get_zone_role_for_user(zone_id, email)

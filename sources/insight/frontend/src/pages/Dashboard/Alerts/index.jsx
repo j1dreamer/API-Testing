@@ -123,7 +123,7 @@ const Alerts = () => {
         else setIsRefreshing(true);
         setError('');
         try {
-            const res = await apiClient.get(`/replay/api/sites/${selectedSiteId}/alerts`);
+            const res = await apiClient.get(`/overview/sites/${selectedSiteId}/alerts`);
             console.log('[Alerts] Raw response:', res.data);
 
             // Aruba returns { elements: [...] } or a bare array
