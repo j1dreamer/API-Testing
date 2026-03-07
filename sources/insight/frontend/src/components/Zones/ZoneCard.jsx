@@ -33,6 +33,7 @@ const ZoneCard = ({ zone, isGlobalAdmin, onUpdated, onDelete, allUsers = [] }) =
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [adding, setAdding] = useState(false);
   const [userSearch, setUserSearch] = useState('');
+  const [siteSearch, setSiteSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -67,6 +68,12 @@ const ZoneCard = ({ zone, isGlobalAdmin, onUpdated, onDelete, allUsers = [] }) =
       setAdding(false);
     }
   };
+
+  const filteredSites = (zone.site_ids || []).filter(siteId => {
+    if (!siteSearch) return true;
+    const siteName = zone._siteNames?.[siteId] || siteId;
+    return siteName.toLowerCase().includes(siteSearch.toLowerCase());
+  });
 
   const borderColor = isOver ? 'border-blue-500' : 'border-slate-700';
 
@@ -106,14 +113,30 @@ const ZoneCard = ({ zone, isGlobalAdmin, onUpdated, onDelete, allUsers = [] }) =
       </div>
 
       {/* Sites drop target */}
-      <div className={`min-h-[48px] p-2 space-y-1 ${isOver ? 'bg-blue-900/10' : ''}`}>
-        {(zone.site_ids || []).length === 0 ? (
-          <p className="text-xs text-slate-600 text-center py-2">Kéo site vào đây</p>
-        ) : (
-          (zone.site_ids || []).map((siteId) => (
-            <ZoneSiteItem key={siteId} site={{ siteId, siteName: zone._siteNames?.[siteId] || siteId }} />
-          ))
+      <div className={`p-2 space-y-2 border-b border-slate-800 ${isOver ? 'bg-blue-900/10' : ''}`}>
+        {(zone.site_ids || []).length > 0 && (
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2 top-[7px]" />
+            <input
+              type="text"
+              placeholder="Filter sites..."
+              value={siteSearch}
+              onChange={e => setSiteSearch(e.target.value)}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded text-xs text-slate-200 pl-7 pr-2 py-1 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
         )}
+        <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar pr-1 min-h-[32px]">
+          {(zone.site_ids || []).length === 0 ? (
+            <p className="text-xs text-slate-600 text-center py-2">Kéo site vào đây</p>
+          ) : filteredSites.length === 0 ? (
+            <p className="text-xs text-slate-600 text-center py-2">Không tìm thấy site</p>
+          ) : (
+            filteredSites.map((siteId) => (
+              <ZoneSiteItem key={siteId} site={{ siteId, siteName: zone._siteNames?.[siteId] || siteId }} />
+            ))
+          )}
+        </div>
       </div>
 
       {/* Members section */}

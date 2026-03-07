@@ -157,18 +157,23 @@ async def fetch_site_ssids_api(
 async def execute_password_sync(
     source_network_name: str = Body(...),
     new_password: str = Body(...),
-    target_zone_ids: List[str] = Body(...),
+    target_zone_ids: List[str] = Body([]),
+    target_site_ids: List[str] = Body([]),
     user: Dict[str, Any] = Depends(get_current_insight_user),
     master_token: str = Depends(require_master_token),
 ):
     _require_manager_or_higher(user)
-    if not target_zone_ids:
-        raise HTTPException(status_code=400, detail="No target zone IDs provided.")
+    if not target_zone_ids and not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target zones or sites provided.")
+        
     from app.features.zones.service import resolve_sites_from_groups
-    target_site_ids = await resolve_sites_from_groups(target_zone_ids)
-    if not target_site_ids:
-        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided zones.")
-    results = await sync_ssids_passwords(source_network_name, new_password, target_site_ids, master_token)
+    resolved_sites = await resolve_sites_from_groups(target_zone_ids) if target_zone_ids else []
+    
+    final_site_ids = list(set(resolved_sites + target_site_ids))
+    if not final_site_ids:
+        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided inputs.")
+        
+    results = await sync_ssids_passwords(source_network_name, new_password, final_site_ids, master_token)
     return {"status": "success", "results": results}
 
 
@@ -176,36 +181,46 @@ async def execute_password_sync(
 async def execute_config_sync(
     source_site_id: str = Body(...),
     source_network_name: str = Body(...),
-    target_zone_ids: List[str] = Body(...),
+    target_zone_ids: List[str] = Body([]),
+    target_site_ids: List[str] = Body([]),
     user: Dict[str, Any] = Depends(get_current_insight_user),
     master_token: str = Depends(require_master_token),
 ):
     _require_manager_or_higher(user)
-    if not target_zone_ids:
-        raise HTTPException(status_code=400, detail="No target zone IDs provided.")
+    if not target_zone_ids and not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target zones or sites provided.")
+        
     from app.features.zones.service import resolve_sites_from_groups
-    target_site_ids = await resolve_sites_from_groups(target_zone_ids)
-    if not target_site_ids:
-        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided zones.")
-    results = await cloner_service.sync_ssids_config(source_site_id, source_network_name, target_site_ids, master_token)
+    resolved_sites = await resolve_sites_from_groups(target_zone_ids) if target_zone_ids else []
+    
+    final_site_ids = list(set(resolved_sites + target_site_ids))
+    if not final_site_ids:
+        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided inputs.")
+        
+    results = await cloner_service.sync_ssids_config(source_site_id, source_network_name, final_site_ids, master_token)
     return {"status": "success", "results": results}
 
 
 @router.post("/sync-delete")
 async def execute_delete_sync(
     source_network_name: str = Body(...),
-    target_zone_ids: List[str] = Body(...),
+    target_zone_ids: List[str] = Body([]),
+    target_site_ids: List[str] = Body([]),
     user: Dict[str, Any] = Depends(get_current_insight_user),
     master_token: str = Depends(require_master_token),
 ):
     _require_manager_or_higher(user)
-    if not target_zone_ids:
-        raise HTTPException(status_code=400, detail="No target zone IDs provided.")
+    if not target_zone_ids and not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target zones or sites provided.")
+        
     from app.features.zones.service import resolve_sites_from_groups
-    target_site_ids = await resolve_sites_from_groups(target_zone_ids)
-    if not target_site_ids:
-        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided zones.")
-    results = await cloner_service.sync_ssids_delete(source_network_name, target_site_ids, master_token)
+    resolved_sites = await resolve_sites_from_groups(target_zone_ids) if target_zone_ids else []
+    
+    final_site_ids = list(set(resolved_sites + target_site_ids))
+    if not final_site_ids:
+        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided inputs.")
+        
+    results = await cloner_service.sync_ssids_delete(source_network_name, final_site_ids, master_token)
     return {"status": "success", "results": results}
 
 
@@ -222,18 +237,21 @@ async def execute_create_sync(
     band_6: bool = Body(True),
     client_isolation: bool = Body(False),
     vlan_id: int = Body(None),
-    target_zone_ids: List[str] = Body(...),
+    target_zone_ids: List[str] = Body([]),
+    target_site_ids: List[str] = Body([]),
     user: Dict[str, Any] = Depends(get_current_insight_user),
     master_token: str = Depends(require_master_token),
 ):
     _require_manager_or_higher(user)
-    if not target_zone_ids:
-        raise HTTPException(status_code=400, detail="No target zone IDs provided.")
+    if not target_zone_ids and not target_site_ids:
+        raise HTTPException(status_code=400, detail="No target zones or sites provided.")
     
     from app.features.zones.service import resolve_sites_from_groups
-    target_site_ids = await resolve_sites_from_groups(target_zone_ids)
-    if not target_site_ids:
-        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided zones.")
+    resolved_sites = await resolve_sites_from_groups(target_zone_ids) if target_zone_ids else []
+    
+    final_site_ids = list(set(resolved_sites + target_site_ids))
+    if not final_site_ids:
+        raise HTTPException(status_code=400, detail="Resolved 0 sites from the provided inputs.")
 
     advanced_options = {
         "is_hidden": is_hidden,
@@ -245,7 +263,7 @@ async def execute_create_sync(
         "vlan_id": vlan_id,
     }
     results = await cloner_service.sync_ssids_create(
-        network_name, network_type, security, password, advanced_options, target_site_ids, master_token
+        network_name, network_type, security, password, advanced_options, final_site_ids, master_token
     )
     return {"status": "success", "results": results}
 
