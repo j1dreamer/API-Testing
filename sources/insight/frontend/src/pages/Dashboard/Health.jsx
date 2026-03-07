@@ -14,17 +14,17 @@ import { formatVN, formatTimeOnly, formatDateKey } from '../../utils/timeUtils';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SEVERITY_COLORS = {
-    poor:  '#ef4444',
+    poor: '#ef4444',
     major: '#ef4444',
-    fair:  '#f59e0b',
+    fair: '#f59e0b',
     minor: '#f59e0b',
-    good:  '#10b981',
-    none:  '#64748b',
+    good: '#10b981',
+    none: '#64748b',
 };
 
 // Shared chart margins — both zones must use identical left/right margins
 // so their X-axis tick positions align perfectly into one continuous frame.
-const CHART_MARGIN_LEFT  = 0;
+const CHART_MARGIN_LEFT = 0;
 const CHART_MARGIN_RIGHT = 48;
 
 // ─── Pure helpers ─────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ const worstSeverity = (conditions) => {
     const sevs = conditions.map(c => (c.conditionSeverity || c.severity || 'none').toLowerCase());
     if (sevs.some(s => s === 'major' || s === 'poor')) return 'poor';
     if (sevs.some(s => s === 'minor' || s === 'fair')) return 'fair';
-    if (sevs.some(s => s === 'good'))                  return 'good';
+    if (sevs.some(s => s === 'good')) return 'good';
     return 'none';
 };
 
@@ -119,9 +119,9 @@ const ColoredBars = ({ unifiedData, selectedIndex }) =>
 
 const Health = () => {
     const { t } = useLanguage();
-    const [data, setData]       = useState(null);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError]     = useState('');
+    const [error, setError] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(null);
 
     const { selectedSiteId, setSelectedSiteId, sites, fetchSites } = useSite();
@@ -163,7 +163,7 @@ const Health = () => {
         (data?.historicalHealths || [])
             .slice()
             .sort((a, b) => a.sampleTime - b.sampleTime),
-    [data]);
+        [data]);
 
     // Unified data consumed by both synchronized charts.
     // Both LineChart and BarChart share this same array ref so syncId index-matching works.
@@ -194,13 +194,13 @@ const Health = () => {
 
             return {
                 label,
-                sampleTime:    h.sampleTime,
-                score:         h.health?.healthScore?.score ?? 0,
+                sampleTime: h.sampleTime,
+                score: h.health?.healthScore?.score ?? 0,
                 scoreSeverity: h.health?.healthScore?.scoreSeverity ?? 'none',
-                count:         conditions.length,
+                count: conditions.length,
                 majorCount,
                 minorCount,
-                severity:      worstSeverity(conditions),
+                severity: worstSeverity(conditions),
             };
         });
     }, [historicalEntries]);
@@ -218,7 +218,7 @@ const Health = () => {
 
     const selectedEntry = useMemo(() =>
         selectedIndex != null ? (historicalEntries[selectedIndex] ?? null) : null,
-    [selectedIndex, historicalEntries]);
+        [selectedIndex, historicalEntries]);
 
     const allConditions = useMemo(() => {
         const list = [];
@@ -237,7 +237,7 @@ const Health = () => {
 
     const displayConditions = useMemo(() =>
         selectedEntry ? extractConditions(selectedEntry) : allConditions,
-    [selectedEntry, allConditions]);
+        [selectedEntry, allConditions]);
 
     // ReferenceLine x must exactly match the XAxis dataKey value at that index
     const selectedLabel = selectedIndex != null
@@ -247,13 +247,13 @@ const Health = () => {
     // ── UI helpers ────────────────────────────────────────────────────────────
 
     const currentScore = data?.currentHealth?.healthScore?.score ?? 0;
-    const scoreColor   = currentScore >= 80 ? 'text-emerald-500'
-                       : currentScore >= 60 ? 'text-yellow-500'
-                       : 'text-rose-500';
+    const scoreColor = currentScore >= 80 ? 'text-emerald-500'
+        : currentScore >= 60 ? 'text-yellow-500'
+            : 'text-rose-500';
 
     const maxCount = useMemo(() =>
         Math.max(1, ...unifiedData.map(d => d.count)),
-    [unifiedData]);
+        [unifiedData]);
 
     const getCounterBox = (title, counters) => {
         const { goodCount = 0, fairCount = 0, poorCount = 0, noneCount = 0 } = counters || {};
@@ -284,26 +284,7 @@ const Health = () => {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{t('health.subtitle')}</p>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-72">
-                        <select
-                            value={selectedSiteId}
-                            onChange={e => setSelectedSiteId(e.target.value)}
-                            disabled={loading || sites.length === 0}
-                            className="w-full h-12 bg-white dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl px-5 text-slate-800 dark:text-white text-sm font-bold appearance-none focus:outline-none focus:border-emerald-500/50 shadow-inner disabled:opacity-50 transition-colors"
-                        >
-                            <option value="" disabled>{t('dashboard.select_site')}</option>
-                            {sites.map(s => (
-                                <option
-                                    key={s.siteId || s._id || s.id}
-                                    value={s.siteId || s._id || s.id}
-                                    className="bg-white dark:bg-slate-900"
-                                >
-                                    {s.siteName || s.name || t('dashboard.unnamed_site')}
-                                </option>
-                            ))}
-                        </select>
-                        <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 rotate-90 pointer-events-none" size={16} />
-                    </div>
+
                     <button
                         onClick={handleRefresh}
                         disabled={loading}
@@ -501,9 +482,9 @@ const Health = () => {
 
             {/* Counter Boxes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {getCounterBox(t('sidebar.clients'),  data?.currentHealth?.clients?.counters)}
+                {getCounterBox(t('sidebar.clients'), data?.currentHealth?.clients?.counters)}
                 {getCounterBox(t('sidebar.networks'), data?.currentHealth?.networks?.counters)}
-                {getCounterBox(t('sidebar.devices'),  data?.currentHealth?.devices?.counters)}
+                {getCounterBox(t('sidebar.devices'), data?.currentHealth?.devices?.counters)}
             </div>
 
             {/* Conditions Table */}
@@ -549,11 +530,10 @@ const Health = () => {
                                         <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{item.sourceType}</td>
                                         <td className="px-6 py-4">{item.name || item.id || '—'}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                                                isMajor
+                                            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${isMajor
                                                     ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400'
                                                     : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                            }`}>
+                                                }`}>
                                                 <span className={`w-2 h-2 rounded-full ${isMajor ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                                                 {severityLabel}
                                             </span>

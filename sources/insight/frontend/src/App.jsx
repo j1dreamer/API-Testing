@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import GlobalLayout from './layouts/GlobalLayout';
 import SiteLayout from './layouts/SiteLayout';
 import Login from './pages/Login';
-import GlobalDashboard from './pages/Dashboard/GlobalDashboard';
 import SiteDetail from './pages/Dashboard/SiteDetail';
 import SiteHealth from './pages/Dashboard/Health';
 import SiteAlerts from './pages/Dashboard/Alerts';
@@ -177,7 +176,6 @@ function App() {
             {/* Global routes — use GlobalLayout */}
             <Route element={<GlobalLayout onLogout={handleLogout} userRole={userRole} isZoneAdmin={isZoneAdmin} />}>
               <Route path="/" element={<Navigate to="/zones" replace />} />
-              <Route path="/dashboard" element={<GlobalDashboard />} />
               <Route path="/config" element={
                 <ViewerRoute userRole={userRole} isZoneAdmin={isZoneAdmin}>
                   <Configuration />

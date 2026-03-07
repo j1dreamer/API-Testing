@@ -408,7 +408,7 @@ const Devices = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
