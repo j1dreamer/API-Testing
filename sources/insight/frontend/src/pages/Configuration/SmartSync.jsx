@@ -17,6 +17,8 @@ const SmartSync = () => {
     const [selectedAction, setSelectedAction] = useState('update_ssid_password');
     const [searchTargetTerm, setSearchTargetTerm] = useState('');
     const [selectedTargetIds, setSelectedTargetIds] = useState(new Set());
+    const [zones, setZones] = useState([]);
+    const [selectedZone, setSelectedZone] = useState('all');
 
     // Step 2: Analysis & Configuration
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -52,6 +54,7 @@ const SmartSync = () => {
     // --- 2. Khởi tạo ---
     useEffect(() => {
         loadLiveSites();
+        loadZones();
     }, []);
 
     const loadLiveSites = async () => {
@@ -62,6 +65,17 @@ const SmartSync = () => {
         } catch (error) {
             console.error(error);
             setLiveSites([]);
+        }
+    };
+
+    const loadZones = async () => {
+        try {
+            const userRole = sessionStorage.getItem('userRole') || 'viewer';
+            const endpoint = (userRole === 'admin' || userRole === 'super_admin') ? '/zones' : '/zones/my';
+            const res = await apiClient.get(endpoint);
+            setZones(res.data || []);
+        } catch (error) {
+            console.error("Failed to load zones:", error);
         }
     };
 
@@ -416,21 +430,41 @@ const SmartSync = () => {
                                         <span>2. Search & Select Target Sites</span>
                                         <span className="text-emerald-600 dark:text-emerald-400">Selected: {selectedTargetIds.size}</span>
                                     </label>
-                                    <div className="relative mb-4 shrink-0">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Search size={16} className="text-slate-400 dark:text-slate-500" />
+                                    <div className="flex gap-3 mb-4 shrink-0">
+                                        <div className="relative flex-1">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <Search size={16} className="text-slate-400 dark:text-slate-500" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="Search sites..."
+                                                value={searchTargetTerm}
+                                                onChange={(e) => setSearchTargetTerm(e.target.value)}
+                                                className="w-full text-sm bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
+                                            />
                                         </div>
-                                        <input
-                                            type="text"
-                                            placeholder="Search sites..."
-                                            value={searchTargetTerm}
-                                            onChange={(e) => setSearchTargetTerm(e.target.value)}
-                                            className="w-full text-sm bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
-                                        />
+                                        <select
+                                            value={selectedZone}
+                                            onChange={(e) => setSelectedZone(e.target.value)}
+                                            className="h-[46px] bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl px-4 text-slate-800 dark:text-white text-sm font-bold focus:outline-none min-w-[150px] md:max-w-[200px] appearance-none"
+                                        >
+                                            <option value="all">Tất cả Group (Zone)</option>
+                                            {zones.map(z => (
+                                                <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>
+                                            ))}
+                                        </select>
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar border border-slate-200 dark:border-white/5 rounded-xl p-2 bg-slate-50/50 dark:bg-black/20">
-                                        {liveSites.filter(res => res.siteName.toLowerCase().includes(searchTargetTerm.toLowerCase())).map((site) => {
+                                        {liveSites.filter(site => {
+                                            const matchesSearch = site.siteName.toLowerCase().includes(searchTargetTerm.toLowerCase());
+                                            let matchesZone = true;
+                                            if (selectedZone !== 'all') {
+                                                const zoneObj = zones.find(z => String(z.id || z._id) === selectedZone);
+                                                matchesZone = zoneObj ? (zoneObj.site_ids || []).includes(site.siteId) : false;
+                                            }
+                                            return matchesSearch && matchesZone;
+                                        }).map((site) => {
                                             const roleInfo = getRoleBadgeInfo(site.role);
                                             const isSelected = selectedTargetIds.has(site.siteId);
                                             const canSelect = roleInfo.canClone;

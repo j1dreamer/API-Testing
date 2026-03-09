@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../../api/apiClient';
 import {
-    Users, AlertTriangle, Mail, Tag, Shield, Map, RefreshCw, Play, Square, CheckSquare, Square as SquareIcon
+    Users, AlertTriangle, Mail, Tag, Shield, Map, RefreshCw, Play, Square, CheckSquare, Square as SquareIcon, CheckCircle, XCircle, Search
 } from 'lucide-react';
 
 const AVAILABLE_ROLES = [
@@ -18,6 +18,8 @@ const BatchAccountAccess = () => {
     const [selectedSites, setSelectedSites] = useState([]);
     const [isLoadingSites, setIsLoadingSites] = useState(false);
     const [activeTab, setActiveTab] = useState('zones'); // 'zones' or 'sites'
+    const [searchTargetTerm, setSearchTargetTerm] = useState('');
+    const [selectedZoneFilter, setSelectedZoneFilter] = useState('all');
 
     const [email, setEmail] = useState('');
     const [selectedRole, setSelectedRole] = useState(AVAILABLE_ROLES[0].value);
@@ -399,6 +401,30 @@ const BatchAccountAccess = () => {
                                     </div>
                                 ) : (
                                     <>
+                                        <div className="flex gap-3 mb-4 shrink-0 mt-2">
+                                            <div className="relative flex-1">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Search size={16} className="text-slate-400 dark:text-slate-500" />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search sites..."
+                                                    value={searchTargetTerm}
+                                                    onChange={(e) => setSearchTargetTerm(e.target.value)}
+                                                    className="w-full text-sm bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-slate-800 dark:text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all font-mono"
+                                                />
+                                            </div>
+                                            <select
+                                                value={selectedZoneFilter}
+                                                onChange={(e) => setSelectedZoneFilter(e.target.value)}
+                                                className="h-[46px] bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl px-4 text-slate-800 dark:text-white text-sm font-bold focus:outline-none min-w-[150px] md:max-w-[200px]"
+                                            >
+                                                <option value="all">Tất cả Group (Zone)</option>
+                                                {zones.map(z => (
+                                                    <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2 mb-2">
                                             <button
                                                 onClick={handleSelectAllSites}
@@ -416,7 +442,15 @@ const BatchAccountAccess = () => {
                                             </span>
                                         </div>
                                         <div className="flex-1 overflow-y-auto space-y-1.5 py-1 pr-1 custom-scrollbar">
-                                            {sites.map(site => (
+                                            {sites.filter(site => {
+                                                const matchesSearch = (site.siteName || '').toLowerCase().includes(searchTargetTerm.toLowerCase());
+                                                let matchesZone = true;
+                                                if (selectedZoneFilter !== 'all') {
+                                                    const zoneObj = zones.find(z => String(z.id || z._id) === selectedZoneFilter);
+                                                    matchesZone = zoneObj ? (zoneObj.site_ids || []).includes(site.id) : false;
+                                                }
+                                                return matchesSearch && matchesZone;
+                                            }).map(site => (
                                                 <div
                                                     key={site.id}
                                                     onClick={() => !isRunning && toggleSite(site.id)}

@@ -24,6 +24,8 @@ const Cloner = () => {
     const [targetSites, setTargetSites] = useState([]);
     const [selectedTargetIds, setSelectedTargetIds] = useState(new Set());
     const [searchTargetTerm, setSearchTargetTerm] = useState('');
+    const [zones, setZones] = useState([]);
+    const [selectedZone, setSelectedZone] = useState('all');
     const [executionLoading, setExecutionLoading] = useState(false);
     const [executionResult, setExecutionResult] = useState(null);
 
@@ -34,6 +36,7 @@ const Cloner = () => {
     useEffect(() => {
         loadSourceSites(sourceMode);
         loadTargetSites();
+        loadZones();
     }, []);
 
     useEffect(() => {
@@ -66,6 +69,17 @@ const Cloner = () => {
             setTargetSites(list);
         } catch (error) {
             console.error("Failed to load target sites:", error);
+        }
+    };
+
+    const loadZones = async () => {
+        try {
+            const userRole = sessionStorage.getItem('userRole') || 'viewer';
+            const endpoint = (userRole === 'admin' || userRole === 'super_admin') ? '/zones' : '/zones/my';
+            const res = await apiClient.get(endpoint);
+            setZones(res.data || []);
+        } catch (error) {
+            console.error("Failed to load zones:", error);
         }
     };
 
@@ -297,22 +311,42 @@ const Cloner = () => {
                                     <Network size={16} className="text-emerald-500" /> {t('cloner.target_deployment')}
                                 </h3>
 
-                                {/* Search Bar for Targets */}
-                                <div className="relative mb-4 shrink-0">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Search size={16} className="text-slate-400 dark:text-slate-500" />
+                                {/* Search Bar & Zone Filter for Targets */}
+                                <div className="flex gap-3 mb-4 shrink-0">
+                                    <div className="relative flex-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Search size={16} className="text-slate-400 dark:text-slate-500" />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder={t('cloner.search_destination')}
+                                            value={searchTargetTerm}
+                                            onChange={(e) => setSearchTargetTerm(e.target.value)}
+                                            className="w-full text-sm bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                                        />
                                     </div>
-                                    <input
-                                        type="text"
-                                        placeholder={t('cloner.search_destination')}
-                                        value={searchTargetTerm}
-                                        onChange={(e) => setSearchTargetTerm(e.target.value)}
-                                        className="w-full text-sm bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl py-3 pl-10 pr-4 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                                    />
+                                    <select
+                                        value={selectedZone}
+                                        onChange={(e) => setSelectedZone(e.target.value)}
+                                        className="h-[46px] bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-xl px-4 text-slate-800 dark:text-white text-sm font-bold focus:outline-none min-w-[150px] md:max-w-[200px]"
+                                    >
+                                        <option value="all">Tất cả Group (Zone)</option>
+                                        {zones.map(z => (
+                                            <option key={z.id || z._id} value={z.id || z._id}>{z.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto pr-3 space-y-3 custom-scrollbar">
-                                    {targetSites.filter(site => site.siteName.toLowerCase().includes(searchTargetTerm.toLowerCase())).map(site => {
+                                    {targetSites.filter(site => {
+                                        const matchesSearch = site.siteName.toLowerCase().includes(searchTargetTerm.toLowerCase());
+                                        let matchesZone = true;
+                                        if (selectedZone !== 'all') {
+                                            const zoneObj = zones.find(z => String(z.id || z._id) === selectedZone);
+                                            matchesZone = zoneObj ? (zoneObj.site_ids || []).includes(site.siteId) : false;
+                                        }
+                                        return matchesSearch && matchesZone;
+                                    }).map(site => {
                                         const roleInfo = getRoleBadgeInfo(site.role);
                                         const isReadOnly = !roleInfo.canClone;
                                         return (

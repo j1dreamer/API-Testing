@@ -6,6 +6,7 @@ import BatchProvision from './BatchProvision';
 import BatchAccountAccess from './BatchAccountAccess';
 import BatchDelete from './BatchDelete';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { ShieldAlert } from 'lucide-react';
 
 const Configuration = () => {
     const [activeTab, setActiveTab] = useState('full_clone');
@@ -13,6 +14,20 @@ const Configuration = () => {
     // super_admin + tenant_admin see all tabs; manager/viewer only sees Full Clone + Smart Sync
     const userRole = sessionStorage.getItem('userRole') || 'viewer';
     const canSeeBatchTabs = userRole === 'super_admin' || userRole === 'tenant_admin';
+
+    if (userRole === 'viewer') {
+        return (
+            <div className="w-full h-full flex items-center justify-center pt-32">
+                <div className="text-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 p-12 rounded-3xl shadow-xl max-w-md">
+                    <ShieldAlert size={64} className="mx-auto mb-6 text-rose-500 opacity-80" />
+                    <h2 className="text-2xl font-black uppercase tracking-widest text-slate-800 dark:text-white mb-3">Access Denied</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                        You do not have permission to view or modify configurations. Please contact your system administrator if you need access.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full h-full flex flex-col pt-4">
